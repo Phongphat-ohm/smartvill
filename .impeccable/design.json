@@ -1,0 +1,38 @@
+{
+  "product": "Village Management System",
+  "direction": "Calm, operational Thai-language workspace for village staff. Prioritize record lookup, clear workflow status, and traceable actions over decorative UI.",
+  "tokens": {
+    "color": {
+      "primary": "#008BF8",
+      "primaryHover": "#0075D1",
+      "primarySoft": "#EAF5FF",
+      "background": "#F5F8FC",
+      "surface": "#FFFFFF",
+      "surfaceSubtle": "#F8FAFC",
+      "foreground": "#172033",
+      "mutedForeground": "#64748B",
+      "border": "#E4EAF2",
+      "borderStrong": "#D5DEEA",
+      "success": "#16845B",
+      "successSoft": "#E8F7EF",
+      "warning": "#A96508",
+      "warningSoft": "#FFF4DF",
+      "danger": "#C24148",
+      "dangerSoft": "#FFF0EF"
+    },
+    "font": "Noto Sans Thai Variable",
+    "radius": "10px",
+    "shadow": "0 8px 24px rgb(31 65 104 / 6%)",
+    "timezone": "Asia/Bangkok",
+    "calendar": "Buddhist Era"
+  },
+  "patterns": {
+    "navigation": "Persistent desktop sidebar; mobile drawer.",
+    "actions": "Blue primary, neutral secondary, restrained red destructive.",
+    "status": "Text-labelled semantic badges; color is supplemental.",
+    "forms": "Inline field validation; SweetAlert2 for consequential confirmation and outcomes.",
+    "data": "Searchable compact tables on desktop; stacked readable records on mobile.",
+    "charts": "Recharts with labelled units/date ranges and actionable record context."
+  },
+  "sourceOfTruth": ["src/app/globals.css", "src/components/ui/", "src/lib/format.ts"]
+}

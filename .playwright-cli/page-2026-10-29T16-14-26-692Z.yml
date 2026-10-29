@@ -1,0 +1,186 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - link "SmartVillระบบบริหารจัดการหมู่บ้าน" [ref=e5] [cursor=pointer]:
+          - /url: /dashboard
+        - button "ปิดเมนู" [ref=e11] [cursor=pointer]
+      - generic [ref=e17]:
+        - paragraph [ref=e18]: ตั้งค่าหมู่บ้าน
+        - paragraph [ref=e19]: ระบบบริหารจัดการ
+      - navigation "เมนูหลัก" [ref=e22]:
+        - link "ภาพรวม" [ref=e23] [cursor=pointer]:
+          - /url: /dashboard
+        - paragraph [ref=e29]: ทะเบียน
+        - link "ครัวเรือน" [ref=e30] [cursor=pointer]:
+          - /url: /households
+        - link "ประชากร" [ref=e34] [cursor=pointer]:
+          - /url: /people
+        - paragraph [ref=e40]: ประปาหมู่บ้าน
+        - link "อ่านมิเตอร์12" [ref=e41] [cursor=pointer]:
+          - /url: /water/readings
+        - link "ใบแจ้งหนี้" [ref=e45] [cursor=pointer]:
+          - /url: /water/billing
+        - paragraph [ref=e48]: การเงินและกองทุน
+        - link "บัญชีกองทุน" [ref=e49] [cursor=pointer]:
+          - /url: /finance/funds
+        - link "สินเชื่อ" [ref=e53] [cursor=pointer]:
+          - /url: /finance/loans
+        - paragraph [ref=e57]: ร้านค้าหมู่บ้าน
+        - link "สินค้าและสต็อก" [ref=e58] [cursor=pointer]:
+          - /url: /store
+        - link "จุดขาย POS" [ref=e63] [cursor=pointer]:
+          - /url: /store/pos
+        - paragraph [ref=e69]: ระบบ
+        - link "รายงาน" [ref=e70] [cursor=pointer]:
+          - /url: /reports
+        - link "ผู้ใช้และสิทธิ์" [ref=e73] [cursor=pointer]:
+          - /url: /settings/users
+        - link "ตั้งค่าระบบ" [ref=e77] [cursor=pointer]:
+          - /url: /settings
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - generic [ref=e83]: ส
+          - generic [ref=e84]:
+            - paragraph [ref=e85]: สมชาย ใจดี
+            - paragraph [ref=e86]: ผู้ดูแลระบบ
+          - button "เมนูบัญชีผู้ใช้" [ref=e87] [cursor=pointer]
+        - paragraph [ref=e90]: โหมดสาธิต · ข้อมูลในหน้าจอเป็นข้อมูลตัวอย่าง
+    - generic [ref=e91]:
+      - banner [ref=e92]:
+        - generic [ref=e93]:
+          - button "เปิดเมนู" [ref=e94] [cursor=pointer]
+          - generic [ref=e96]: ตั้งค่าหมู่บ้าน/ระบบจัดการ
+          - text: ปีงบประมาณ 2569
+        - generic [ref=e97]:
+          - text: วันพฤหัสบดีที่ 29 ตุลาคม พ.ศ. 2569
+          - button "การแจ้งเตือน" [ref=e98] [cursor=pointer]
+          - generic [ref=e102]: สสมชาย ใจดี
+      - main [ref=e103]:
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - generic [ref=e106]:
+              - heading "ภาพรวมหมู่บ้าน" [level=1] [ref=e107]
+              - paragraph [ref=e108]: สรุปงานและสถานะบริการประจำวัน
+            - generic [ref=e109]:
+              - generic [ref=e110]: 29 ต.ค. 2569
+              - link "บันทึกมิเตอร์" [ref=e113] [cursor=pointer]:
+                - /url: /water/readings
+          - region "สถิติหมู่บ้าน" [ref=e115]:
+            - generic [ref=e116]:
+              - generic [ref=e117]: ครัวเรือนทั้งหมด
+              - paragraph [ref=e122]: "842"
+              - paragraph [ref=e123]: +12 จากเดือนก่อน
+            - generic [ref=e127]:
+              - generic [ref=e128]: ประชากรในหมู่บ้าน
+              - paragraph [ref=e135]: 2,416
+              - paragraph [ref=e136]: +8 จากเดือนก่อน
+            - generic [ref=e140]:
+              - generic [ref=e141]: ยอดใช้น้ำเดือนนี้
+              - paragraph [ref=e145]: 2,940 ม³
+              - paragraph [ref=e146]: +3.9% จากเดือนก่อน
+            - generic [ref=e150]:
+              - generic [ref=e151]: ยอดค้างชำระ
+              - paragraph [ref=e156]: ฿ 28,450
+              - paragraph [ref=e157]: 18 ครัวเรือน
+          - generic [ref=e161]:
+            - generic [ref=e162]:
+              - generic [ref=e163]:
+                - generic [ref=e164]:
+                  - heading "รอบอ่านมิเตอร์เดือนตุลาคม" [level=2] [ref=e165]
+                  - paragraph [ref=e166]: ความคืบหน้าการจดหน่วยและรายการที่ต้องตรวจสอบ
+                - link "เปิดรอบอ่าน" [ref=e167] [cursor=pointer]:
+                  - /url: /water/readings
+              - generic [ref=e170]:
+                - generic [ref=e171]:
+                  - generic [ref=e172]:
+                    - generic [ref=e173]:
+                      - paragraph [ref=e174]: 68%
+                      - paragraph [ref=e175]: อ่านแล้ว 573 จาก 842 มิเตอร์
+                    - text: เหลือ 6 วัน
+                  - generic [ref=e176]: เริ่ม 1 ต.ค.ครบกำหนด 4 พ.ย. 2569
+                  - generic [ref=e177]:
+                    - generic [ref=e178]: บันทึกแล้ว 573
+                    - generic [ref=e181]: รอตรวจ 7
+                - generic [ref=e185]:
+                  - generic [ref=e186]:
+                    - generic [ref=e187]:
+                      - paragraph [ref=e188]: รายการต้องตรวจ
+                      - paragraph [ref=e189]: มีความผิดปกติหรือข้อมูลไม่ครบ
+                    - text: "7"
+                  - generic [ref=e190]:
+                    - generic [ref=e192]:
+                      - paragraph [ref=e193]: บ้านเลขที่ 72/1
+                      - paragraph [ref=e194]: เลขมิเตอร์ต่ำกว่ารอบก่อน
+                    - generic [ref=e196]:
+                      - paragraph [ref=e197]: บ้านเลขที่ 155
+                      - paragraph [ref=e198]: ใช้น้ำสูงกว่าค่าเฉลี่ย
+                    - generic [ref=e200]:
+                      - paragraph [ref=e201]: บ้านเลขที่ 201/3
+                      - paragraph [ref=e202]: ยังไม่พบเลขมิเตอร์
+                  - link "ตรวจรายการทั้งหมด" [ref=e203] [cursor=pointer]:
+                    - /url: /water/readings?status=review
+            - generic [ref=e207]:
+              - generic [ref=e208]:
+                - heading "ปริมาณใช้น้ำ" [level=2] [ref=e209]
+                - paragraph [ref=e210]: หน่วยรวมรายเดือน · ลูกบาศก์เมตร
+              - combobox "ช่วงข้อมูล" [ref=e211]:
+                - option "6 เดือน" [selected]
+                - option "12 เดือน"
+          - generic [ref=e212]:
+            - generic [ref=e213]:
+              - generic [ref=e214]:
+                - generic [ref=e215]:
+                  - heading "กิจกรรมล่าสุด" [level=2] [ref=e216]
+                  - paragraph [ref=e217]: บันทึกการทำงานจากเจ้าหน้าที่
+                - link "ดูทั้งหมด" [ref=e218] [cursor=pointer]:
+                  - /url: /reports
+              - generic [ref=e219]:
+                - generic [ref=e220]:
+                  - text: ก
+                  - generic [ref=e221]:
+                    - paragraph [ref=e222]:
+                      - text: บันทึกเลขมิเตอร์
+                      - generic [ref=e223]: · กมลวรรณ แสงดี
+                    - paragraph [ref=e224]: บ้านเลขที่ 44/2
+                  - text: 10:42 น.
+                - generic [ref=e225]:
+                  - text: ส
+                  - generic [ref=e226]:
+                    - paragraph [ref=e227]:
+                      - text: รับชำระค่าน้ำ
+                      - generic [ref=e228]: · สุชาติ แก้วใจ
+                    - paragraph [ref=e229]: ใบเสร็จ WT-690104
+                  - text: 10:18 น.
+                - generic [ref=e230]:
+                  - text: ว
+                  - generic [ref=e231]:
+                    - paragraph [ref=e232]:
+                      - text: เพิ่มสมาชิกครัวเรือน
+                      - generic [ref=e233]: · วิไลพร ใจมั่น
+                    - paragraph [ref=e234]: บ้านเลขที่ 118
+                  - text: 09:56 น.
+                - generic [ref=e235]:
+                  - text: ส
+                  - generic [ref=e236]:
+                    - paragraph [ref=e237]:
+                      - text: อนุมัติรายการ
+                      - generic [ref=e238]: · สมชาย ใจดี
+                    - paragraph [ref=e239]: เงินสมทบกองทุน 2,500 ฿
+                  - text: 09:21 น.
+            - generic [ref=e240]:
+              - generic [ref=e241]:
+                - generic [ref=e242]:
+                  - heading "งานที่ต้องทำ" [level=2] [ref=e243]
+                  - paragraph [ref=e244]: รายการรอดำเนินการของคุณ
+                - text: 4 รายการ
+              - generic [ref=e245]:
+                - link "ตรวจเลขมิเตอร์ผิดปกติ7 รายการ · ประปา" [ref=e246] [cursor=pointer]:
+                  - /url: /water/readings
+                - link "อนุมัติรายการกองทุน3 รายการ · การเงิน" [ref=e250] [cursor=pointer]:
+                  - /url: /finance/funds
+                - link "ชำระค่าน้ำค้าง18 ครัวเรือน · ประปา" [ref=e254] [cursor=pointer]:
+                  - /url: /water/billing
+                - link "ตรวจสต็อกสินค้า4 รายการใกล้หมด · ร้านค้า" [ref=e258] [cursor=pointer]:
+                  - /url: /store
+  - button "Open Next.js Dev Tools" [ref=e267] [cursor=pointer]
