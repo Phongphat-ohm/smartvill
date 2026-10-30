@@ -4,9 +4,11 @@ import { WaterReadings } from "@/components/water-readings";
 export default async function ReadingsPage() {
   if (!isSupabaseConfigured()) return <WaterReadings />;
   const supabase = await createServerSupabaseClient();
-  const { data: allowed } = await supabase.rpc("has_permission", { permission_key: "water.reading.view" });
+  const [{ data: allowed }, { data, error }] = await Promise.all([
+    supabase.rpc("has_permission", { permission_key: "water.reading.view" }),
+    supabase.from("water_meters").select("id,start_reading,connection:water_connections(account_name,household:households(house_number)),readings:meter_readings(id,reading_date,reading_value,usage,status)").is("removed_at", null).order("reading_date", { ascending: false, referencedTable: "meter_readings" }).limit(2, { referencedTable: "meter_readings" }).order("id").limit(1000),
+  ]);
   if (!allowed) return <p className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">บัญชีนี้ไม่มีสิทธิ์ดูข้อมูลมิเตอร์</p>;
-  const { data, error } = await supabase.from("water_meters").select("id,start_reading,connection:water_connections(account_name,household:households(house_number)),readings:meter_readings(id,reading_date,reading_value,usage,status)").is("removed_at", null).order("reading_date", { ascending: false, referencedTable: "meter_readings" }).limit(2, { referencedTable: "meter_readings" }).order("id").limit(1000);
   if (error) return <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">โหลดข้อมูลมิเตอร์ไม่สำเร็จ ตรวจสอบ migration และ RLS</div>;
   const month = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit" }).format(new Date());
   const rows = (data ?? []).map((meter) => {

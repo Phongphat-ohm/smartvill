@@ -109,9 +109,20 @@ body {
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
-::selection { background: #cce8ff; color: #0b3764; }
-:focus-visible { outline: 3px solid rgb(0 139 248 / 35%); outline-offset: 2px; }
-* { scrollbar-color: #c5d2e1 transparent; scrollbar-width: thin; }
+a, button, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+::selection { background: var(--primary-soft); color: var(--foreground); }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
+* { scrollbar-color: var(--border-strong) transparent; scrollbar-width: thin; }
+
+/* Dense operational UI still needs readable Thai metadata at every viewport. */
+.text-\[9px\], .text-\[10px\] {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.text-slate-400 { color: var(--muted-foreground); }
 
 .swal2-popup.village-swal {
   border: 1px solid var(--border);
@@ -121,7 +132,7 @@ button:disabled { cursor: not-allowed; }
   box-shadow: 0 24px 70px rgb(19 42 71 / 18%);
 }
 .swal2-popup.village-swal .swal2-title { font-size: 20px; font-weight: 700; }
-.swal2-popup.village-swal .swal2-html-container { color: var(--muted); font-size: 14px; }
+.swal2-popup.village-swal .swal2-html-container { color: var(--muted-foreground); font-size: 14px; }
 .swal2-popup.village-swal .swal2-confirm {
   border-radius: 10px; background: var(--primary); font-weight: 700;
   box-shadow: none;
@@ -137,39 +148,71 @@ button:disabled { cursor: not-allowed; }
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* Field staff frequently work from touch devices; keep compact desktop density there. */
+@media (pointer: coarse) {
+  button { min-block-size: 44px; min-inline-size: 44px; }
+  nav a { min-block-size: 44px; }
+  input:not([type="hidden"]), select, textarea { min-block-size: 44px; font-size: 1rem; }
 }
+
+.dark {
+  color-scheme: dark;
+  --surface: #172235;
+  --surface-subtle: #202d42;
+  --muted: #27364c;
+  --muted-foreground: #b8c5d8;
+  --border: #36465d;
+  --border-strong: #4a5c75;
+  --primary: #4caafc;
+  --primary-hover: #7bc2ff;
+  --primary-soft: #0e365d;
+  --success: #48bd8a;
+  --success-soft: #123d31;
+  --warning: #f2b455;
+  --warning-soft: #4a3210;
+  --danger: #f08086;
+  --danger-soft: #4a2028;
+  --shadow-soft: 0 10px 28px rgb(0 0 0 / 24%);
+  --background: #0f1725;
+  --foreground: #edf3fb;
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --primary-foreground: #06213a;
+  --secondary: var(--muted);
+  --secondary-foreground: var(--foreground);
+  --accent: var(--muted);
+  --accent-foreground: var(--foreground);
+  --destructive: var(--danger);
+  --input: var(--border);
+  --ring: var(--primary);
+  --chart-1: #4caafc;
+  --chart-2: #48bd8a;
+  --chart-3: #f2b455;
+  --chart-4: #b59aff;
+  --chart-5: #b8c5d8;
+  --sidebar: #121c2c;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--surface-subtle);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+/* Components authored before tokenization keep their semantic role in dark mode. */
+.dark .bg-white { background-color: var(--surface); }
+.dark .bg-slate-50, .dark .bg-slate-50\/70, .dark .bg-slate-50\/80 { background-color: var(--surface-subtle); }
+.dark .bg-slate-100, .dark .bg-slate-200 { background-color: var(--muted); }
+.dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300 { border-color: var(--border); }
+.dark .divide-slate-100 > :not(:last-child) { border-color: var(--border); }
+.dark .text-slate-900, .dark .text-slate-800, .dark .text-slate-700 { color: var(--foreground); }
+.dark .text-slate-600, .dark .text-slate-500, .dark .text-slate-400 { color: var(--muted-foreground); }
+.dark .hover\:bg-slate-50:hover, .dark .hover\:bg-slate-50\/70:hover { background-color: var(--surface-subtle); }
+.dark .bg-\[\#eaf5ff\], .dark .bg-\[\#edf6ff\] { background-color: var(--primary-soft); }
+.dark .text-\[\#0075d1\], .dark .text-\[\#008BF8\], .dark .text-\[\#1485e5\] { color: var(--primary); }
 
 @layer base {
   * {

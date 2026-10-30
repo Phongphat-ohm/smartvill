@@ -2,10 +2,11 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { householdSchema, meterReadingSchema, paymentSchema, residentSchema } from "@/lib/validations";
+import { householdSchema, householdUpdateSchema, meterReadingSchema, paymentSchema, residentSchema, residentUpdateSchema, residencyChangeSchema } from "@/lib/validations";
 import { createAdminSupabaseClient, createServerSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { encryptNationalId, nationalIdLookupHash } from "@/lib/security/national-id";
+import { decryptNationalId, encryptNationalId, nationalIdLookupHash } from "@/lib/security/national-id";
 
 export type ActionState = { ok: boolean; message: string; code?: string };
 
@@ -41,6 +42,30 @@ export async function createHouseholdFormAction(formData: FormData) {
   return createHouseholdAction({ ok: false, message: "" }, formData);
 }
 
+export async function updateHouseholdAction(formData: FormData): Promise<ActionState> {
+  if (!isSupabaseConfigured()) return { ok: false, message: "ระบบยังไม่ได้เชื่อมต่อ Supabase" };
+  const parsed = householdUpdateSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง" };
+  const { supabase, allowed } = await currentUserWithPermission("registry.household.update");
+  if (!allowed) return { ok: false, message: "บัญชีนี้ไม่มีสิทธิ์แก้ไขครัวเรือน" };
+  const value = parsed.data;
+  const { error } = await supabase.rpc("update_household_record", { household_id: value.id, house_number: value.houseNumber, village_moo: value.moo, road_value: value.road || null, subdistrict_value: value.subdistrict, district_value: value.district, province_value: value.province, postal_code_value: value.postalCode, household_type_value: value.type, occupancy_status_value: value.occupancyStatus, note_value: value.note || null });
+  if (error) return { ok: false, message: "แก้ไขครัวเรือนไม่สำเร็จ ตรวจสอบข้อมูลและสถานะ" };
+  revalidatePath("/households"); revalidatePath(`/households/${value.id}`);
+  return { ok: true, message: "บันทึกข้อมูลครัวเรือนแล้ว" };
+}
+
+export async function archiveHouseholdAction(formData: FormData): Promise<ActionState> {
+  const householdId = String(formData.get("householdId") ?? ""); const reason = String(formData.get("reason") ?? "").trim();
+  if (!/^[0-9a-f-]{36}$/i.test(householdId) || reason.length < 3) return { ok: false, message: "ระบุเหตุผลอย่างน้อย 3 ตัวอักษร" };
+  const { supabase, allowed } = await currentUserWithPermission("registry.household.update");
+  if (!allowed) return { ok: false, message: "บัญชีนี้ไม่มีสิทธิ์เก็บประวัติครัวเรือน" };
+  const { error } = await supabase.rpc("archive_household_record", { household_id: householdId, archive_reason: reason });
+  if (error) return { ok: false, message: "เก็บประวัติไม่ได้: ต้องย้ายสมาชิกปัจจุบันออกและปิดจุดใช้น้ำ active ก่อน" };
+  revalidatePath("/households"); revalidatePath(`/households/${householdId}`);
+  return { ok: true, message: "เก็บประวัติครัวเรือนแล้ว" };
+}
+
 export async function createResidentAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
   if (!isSupabaseConfigured()) return { ok: false, message: "ระบบยังไม่ได้เชื่อมต่อ Supabase" };
   const parsed = residentSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -68,6 +93,65 @@ export async function createResidentAction(_previous: ActionState, formData: For
 
 export async function createResidentFormAction(formData: FormData) {
   return createResidentAction({ ok: false, message: "" }, formData);
+}
+
+export async function updateResidentAction(formData: FormData): Promise<ActionState> {
+  if (!isSupabaseConfigured()) return { ok: false, message: "ระบบยังไม่ได้เชื่อมต่อ Supabase" };
+  const parsed = residentUpdateSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง" };
+  const { supabase, allowed } = await currentUserWithPermission("registry.resident.update");
+  if (!allowed) return { ok: false, message: "บัญชีนี้ไม่มีสิทธิ์แก้ไขข้อมูลประชากร" };
+  const nationalId = parsed.data.nationalId?.trim() ?? ""; let ciphertext: string | null = null; let hash: string | null = null;
+  try { if (nationalId) { ciphertext = encryptNationalId(nationalId); hash = nationalIdLookupHash(nationalId); } } catch { return { ok: false, message: "ระบบเข้ารหัสเลขบัตรยังไม่ได้ตั้งค่า" }; }
+  const { error } = await supabase.rpc("update_resident_record", { resident_id: parsed.data.id, first_name_value: parsed.data.firstName, last_name_value: parsed.data.lastName, birth_date_value: parsed.data.birthDate || null, phone_value: parsed.data.phone || null, replace_national_id: Boolean(nationalId), national_id_ciphertext_value: ciphertext, national_id_lookup_hash_value: hash });
+  if (error) return { ok: false, message: "แก้ไขข้อมูลประชากรไม่สำเร็จ ตรวจสอบเลขบัตรไม่ซ้ำและสิทธิ์" };
+  revalidatePath("/people"); revalidatePath(`/people/${parsed.data.id}`);
+  return { ok: true, message: "บันทึกข้อมูลประชากรแล้ว" };
+}
+
+export async function changeResidencyAction(formData: FormData): Promise<ActionState> {
+  const parsed = residencyChangeSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "ข้อมูลการย้ายไม่ถูกต้อง" };
+  const { supabase, allowed } = await currentUserWithPermission("registry.resident.update");
+  if (!allowed) return { ok: false, message: "บัญชีนี้ไม่มีสิทธิ์ย้ายทะเบียนประชากร" };
+  const value = parsed.data;
+  const { error } = await supabase.rpc("change_residency", { resident_id: value.residentId, destination_household_id: value.destinationHouseholdId || null, relationship: value.relationship, change_date: value.changeDate, change_reason: value.reason });
+  if (error) return { ok: false, message: "ย้ายทะเบียนไม่สำเร็จ ตรวจสอบวันย้ายและครัวเรือนปลายทาง" };
+  revalidatePath("/people"); revalidatePath(`/people/${value.residentId}`); revalidatePath("/households");
+  return { ok: true, message: value.destinationHouseholdId ? "ย้ายเข้าครัวเรือนใหม่แล้ว" : "บันทึกการย้ายออกแล้ว" };
+}
+
+export async function setHouseholdHeadAction(formData: FormData): Promise<ActionState> {
+  const householdId = String(formData.get("householdId") ?? ""); const residentId = String(formData.get("residentId") ?? ""); const reason = String(formData.get("reason") ?? "").trim();
+  if (!/^[0-9a-f-]{36}$/i.test(householdId) || !/^[0-9a-f-]{36}$/i.test(residentId) || reason.length < 3) return { ok: false, message: "ระบุผู้รับตำแหน่งและเหตุผลอย่างน้อย 3 ตัวอักษร" };
+  const { supabase, allowed } = await currentUserWithPermission("registry.resident.update");
+  if (!allowed) return { ok: false, message: "บัญชีนี้ไม่มีสิทธิ์เปลี่ยนหัวหน้าครัวเรือน" };
+  const { error } = await supabase.rpc("set_household_head", { household_id: householdId, resident_id: residentId, change_reason: reason });
+  if (error) return { ok: false, message: "เปลี่ยนหัวหน้าครัวเรือนไม่สำเร็จ" };
+  revalidatePath("/households"); revalidatePath(`/households/${householdId}`); revalidatePath("/people"); revalidatePath(`/people/${residentId}`);
+  return { ok: true, message: "เปลี่ยนหัวหน้าครัวเรือนแล้ว" };
+}
+
+export async function revealNationalIdAction(residentId: string): Promise<{ ok: boolean; message?: string; nationalId?: string }> {
+  if (!/^[0-9a-f-]{36}$/i.test(residentId)) return { ok: false, message: "ไม่พบรหัสประชากร" };
+  const { supabase, allowed } = await currentUserWithPermission("registry.resident.sensitive.read");
+  if (!allowed) return { ok: false, message: "บัญชีนี้ไม่มีสิทธิ์ดูเลขบัตรเต็ม" };
+  const { data, error } = await supabase.rpc("get_resident_national_id_ciphertext", { resident_id: residentId });
+  if (error || !data) return { ok: false, message: "ไม่พบเลขบัตรหรือไม่สามารถเปิดดูได้" };
+  try { return { ok: true, nationalId: decryptNationalId(String(data)) }; } catch { return { ok: false, message: "ไม่สามารถถอดรหัสเลขบัตรได้" }; }
+}
+
+export async function findResidentByNationalIdAction(nationalId: string): Promise<{ ok: boolean; message?: string; resident?: { id: string; name: string; household: string } }> {
+  if (!/^\d{13}$/.test(nationalId)) return { ok: false, message: "กรอกเลขบัตรประชาชน 13 หลัก" };
+  const { supabase, allowed } = await currentUserWithPermission("registry.resident.sensitive.read");
+  if (!allowed) return { ok: false, message: "บัญชีนี้ไม่มีสิทธิ์ค้นหาด้วยเลขบัตร" };
+  let lookupHash: string;
+  try { lookupHash = nationalIdLookupHash(nationalId); } catch { return { ok: false, message: "ระบบเข้ารหัสเลขบัตรยังไม่ได้ตั้งค่า" }; }
+  const { data, error } = await supabase.rpc("find_resident_by_national_id", { lookup_hash: lookupHash });
+  const row = Array.isArray(data) ? data[0] as { id: string; first_name: string; last_name: string; house_number: string | null; moo: string | null } | undefined : undefined;
+  if (error) return { ok: false, message: "ค้นหาข้อมูลไม่สำเร็จ" };
+  if (!row) return { ok: false, message: "ไม่พบประชากรจากเลขบัตรนี้" };
+  return { ok: true, resident: { id: row.id, name: `${row.first_name} ${row.last_name}`, household: row.house_number ? `บ้านเลขที่ ${row.house_number} หมู่ ${row.moo ?? "—"}` : "ไม่มีครัวเรือนปัจจุบัน" } };
 }
 
 export async function recordWaterReadingAction(_previous: ActionState, formData: FormData): Promise<ActionState> {

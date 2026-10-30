@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, CreditCard, Search } from "lucide-react";
 import Swal from "sweetalert2";
@@ -21,6 +21,8 @@ export function WaterBilling({ initialRows = demoRows, isDemo = true, eligibleRe
   const [error, setError] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const dialogTitleId = useId();
+  const dialogDescriptionId = useId();
   const totals = useMemo(() => ({ billed: rows.reduce((sum, row) => sum + Number(row.amount), 0), paid: rows.reduce((sum, row) => sum + Number(row.paid), 0), outstanding: rows.reduce((sum, row) => sum + Number(row.amount) - Number(row.paid), 0) }), [rows]);
   const filtered = rows.filter((row) => `${row.id} ${row.houseNumber} ${row.name}`.toLowerCase().includes(query.toLowerCase()));
 
@@ -73,7 +75,17 @@ export function WaterBilling({ initialRows = demoRows, isDemo = true, eligibleRe
         {filtered.length === 0 && <p className="py-12 text-center text-[12px] text-slate-500">ไม่พบใบแจ้งหนี้</p>}
       </section>
 
-      <dialog ref={dialogRef} className="m-auto w-[calc(100%-28px)] max-w-[440px] rounded-2xl border border-[var(--border)] bg-white p-0 text-slate-900 shadow-[0_24px_70px_rgb(19_42_71_/_18%)] backdrop:bg-slate-950/35"><form ref={formRef} onSubmit={savePayment} className="space-y-5 p-5 sm:p-6"><div><h2 className="text-[18px] font-bold">รับชำระค่าน้ำ</h2><p className="mt-1 text-[12px] text-slate-500">{selected?.id} · บ้านเลขที่ {selected?.houseNumber}</p></div><div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] text-slate-500">ยอดคงเหลือ</p><p className="mt-1 text-[19px] font-bold">{selected ? formatCurrency(Number(selected.amount) - Number(selected.paid)) : "—"}</p></div><label className="block space-y-1.5"><span className="text-[11px] font-semibold">ยอดรับชำระ <span className="text-rose-500">*</span></span><input name="amount" type="number" min="0.01" step="0.01" max={selected ? Number(selected.amount) - Number(selected.paid) : undefined} required className="h-11 w-full rounded-lg border border-[var(--border)] px-3 text-[14px] outline-none focus:border-blue-400 focus:ring-3 focus:ring-blue-100" placeholder="ระบุยอดเงิน" /></label><label className="block space-y-1.5"><span className="text-[11px] font-semibold">ช่องทางรับเงิน</span><select name="method" className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[12px] outline-none focus:border-blue-400"><option value="cash">เงินสด</option><option value="transfer">โอนเงิน</option><option value="other">อื่น ๆ</option></select></label><label className="block space-y-1.5"><span className="text-[11px] font-semibold">เลขอ้างอิง (ถ้ามี)</span><input name="reference" className="h-10 w-full rounded-lg border border-[var(--border)] px-3 text-[12px] outline-none focus:border-blue-400" /></label>{error && <p role="alert" className="text-[11px] text-rose-700">{error}</p>}<div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4"><button type="button" onClick={() => dialogRef.current?.close()} className="h-9 rounded-lg border border-[var(--border)] px-3.5 text-[11px] font-semibold text-slate-600">ยกเลิก</button><button type="submit" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--primary)] px-4 text-[11px] font-semibold text-white"><Check size={14} />ยืนยันรับเงิน</button></div></form></dialog>
+      <dialog ref={dialogRef} aria-labelledby={dialogTitleId} aria-describedby={dialogDescriptionId} className="m-auto w-[calc(100%-28px)] max-w-[440px] rounded-2xl border border-[var(--border)] bg-white p-0 text-slate-900 shadow-[0_24px_70px_rgb(19_42_71_/_18%)] backdrop:bg-slate-950/35">
+        <form ref={formRef} onSubmit={savePayment} className="space-y-5 p-5 sm:p-6">
+          <div><h2 id={dialogTitleId} className="text-[18px] font-bold">รับชำระค่าน้ำ</h2><p id={dialogDescriptionId} className="mt-1 text-[12px] text-slate-500">{selected?.id} · บ้านเลขที่ {selected?.houseNumber}</p></div>
+          <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] text-slate-500">ยอดคงเหลือ</p><p className="mt-1 text-[19px] font-bold">{selected ? formatCurrency(Number(selected.amount) - Number(selected.paid)) : "—"}</p></div>
+          <label className="block space-y-1.5"><span className="text-[11px] font-semibold">ยอดรับชำระ <span className="text-rose-500">*</span></span><input name="amount" type="number" min="0.01" step="0.01" max={selected ? Number(selected.amount) - Number(selected.paid) : undefined} autoFocus required className="h-11 w-full rounded-lg border border-[var(--border)] px-3 text-[14px] outline-none focus:border-blue-400 focus:ring-3 focus:ring-blue-100" placeholder="ระบุยอดเงิน" /></label>
+          <label className="block space-y-1.5"><span className="text-[11px] font-semibold">ช่องทางรับเงิน</span><select name="method" className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[12px] outline-none focus:border-blue-400"><option value="cash">เงินสด</option><option value="transfer">โอนเงิน</option><option value="other">อื่น ๆ</option></select></label>
+          <label className="block space-y-1.5"><span className="text-[11px] font-semibold">เลขอ้างอิง (ถ้ามี)</span><input name="reference" className="h-10 w-full rounded-lg border border-[var(--border)] px-3 text-[12px] outline-none focus:border-blue-400" /></label>
+          {error && <p role="alert" className="text-[11px] text-rose-700">{error}</p>}
+          <div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4"><button type="button" onClick={() => dialogRef.current?.close()} className="h-9 rounded-lg border border-[var(--border)] px-3.5 text-[11px] font-semibold text-slate-600">ยกเลิก</button><button type="submit" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--primary)] px-4 text-[11px] font-semibold text-white"><Check size={14} />ยืนยันรับเงิน</button></div>
+        </form>
+      </dialog>
     </div>
   );
 }

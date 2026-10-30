@@ -23,6 +23,29 @@ export const residentSchema = z.object({
   relationship: requiredText("ความสัมพันธ์กับหัวหน้าครัวเรือน"),
 });
 
+export const householdUpdateSchema = householdSchema.extend({
+  id: z.string().uuid("ไม่พบรหัสครัวเรือน"),
+  occupancyStatus: z.enum(["occupied", "vacant", "archived"]),
+  note: z.string().trim().max(2000, "หมายเหตุต้องไม่เกิน 2,000 ตัวอักษร").default(""),
+});
+
+export const residentUpdateSchema = z.object({
+  id: z.string().uuid("ไม่พบรหัสประชากร"),
+  firstName: requiredText("ชื่อ"),
+  lastName: requiredText("นามสกุล"),
+  nationalId: z.string().regex(/^\d{13}$/, "เลขบัตรประชาชนต้องมี 13 หลัก").optional().or(z.literal("")),
+  birthDate: z.string().optional(),
+  phone: z.string().trim().max(30, "เบอร์โทรศัพท์ยาวเกินไป").default(""),
+});
+
+export const residencyChangeSchema = z.object({
+  residentId: z.string().uuid("ไม่พบรหัสประชากร"),
+  destinationHouseholdId: z.string().uuid("เลือกครัวเรือนปลายทางให้ถูกต้อง").optional().or(z.literal("")),
+  relationship: requiredText("ความสัมพันธ์"),
+  changeDate: z.string().date("วันที่ย้ายไม่ถูกต้อง"),
+  reason: z.string().trim().min(3, "ระบุเหตุผลอย่างน้อย 3 ตัวอักษร").max(255),
+});
+
 export const meterReadingSchema = z.object({
   meterId: requiredText("มิเตอร์"),
   readingDate: z.string().date("วันที่อ่านมิเตอร์ไม่ถูกต้อง"),

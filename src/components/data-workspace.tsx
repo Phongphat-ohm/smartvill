@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable } from "@tanstack/react-table";
 import { Search, Plus, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, Filter, X } from "lucide-react";
-import Swal from "sweetalert2";
-import ExcelJS from "exceljs";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { formatCurrency } from "@/lib/format";
 import type { DemoRow } from "@/lib/demo-data";
+import { Autocomplete, type AutocompleteOption } from "@/components/ui/autocomplete";
 
 export type WorkspaceColumn = { key: string; label: string; kind?: "text" | "number" | "money" | "status"; options?: string[] };
-export type FormField = { key: string; label: string; kind?: "text" | "number" | "date" | "select"; options?: string[]; required?: boolean; placeholder?: string };
+export type FormField = { key: string; label: string; kind?: "text" | "number" | "date" | "select" | "autocomplete"; options?: Array<string | AutocompleteOption>; required?: boolean; placeholder?: string };
 
 type DataWorkspaceProps = {
   title: string;
@@ -23,9 +23,13 @@ type DataWorkspaceProps = {
   filters?: string[];
   onCreate?: (formData: FormData) => Promise<{ ok: boolean; message: string }>;
   readOnly?: boolean;
+  detailBasePath?: string;
 };
 
-const toast = (title: string) => Swal.fire({ toast: true, position: "top-end", icon: "success", title, showConfirmButton: false, timer: 2200, customClass: { popup: "village-swal" } });
+async function toast(title: string) {
+  const Swal = (await import("sweetalert2")).default;
+  return Swal.fire({ toast: true, position: "top-end", icon: "success", title, showConfirmButton: false, timer: 2200, customClass: { popup: "village-swal" } });
+}
 
 function StatusPill({ value }: { value: string }) {
   const tone = /ปกติ|อนุมัติ|ชำระแล้ว|พร้อมขาย|อาศัยอยู่|บันทึกแล้ว|ปิดบัญชี/.test(value)
@@ -38,7 +42,7 @@ function StatusPill({ value }: { value: string }) {
   return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${tone}`}>{value}</span>;
 }
 
-export function DataWorkspace({ title, description, actionLabel, searchPlaceholder, columns, fields, initialRows, filters = ["ทั้งหมด", "ปกติ", "รอตรวจ", "เกินกำหนด"], onCreate, readOnly = false }: DataWorkspaceProps) {
+export function DataWorkspace({ title, description, actionLabel, searchPlaceholder, columns, fields, initialRows, filters = ["ทั้งหมด", "ปกติ", "รอตรวจ", "เกินกำหนด"], onCreate, readOnly = false, detailBasePath }: DataWorkspaceProps) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
   useEffect(() => setRows(initialRows), [initialRows]);
@@ -48,6 +52,8 @@ export function DataWorkspace({ title, description, actionLabel, searchPlacehold
   const [formError, setFormError] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const dialogTitleId = useId();
+  const dialogDescriptionId = useId();
 
   const filteredRows = useMemo(() => rows.filter((row) => {
     const matchesQuery = !query || Object.values(row).some((value) => String(value).toLowerCase().includes(query.toLowerCase()));
@@ -58,13 +64,14 @@ export function DataWorkspace({ title, description, actionLabel, searchPlacehold
   const tableColumns = useMemo<ColumnDef<DemoRow>[]>(() => columns.map((column) => ({
     accessorKey: column.key,
     header: ({ column: tableColumn }) => <button className="inline-flex items-center gap-1.5 text-left" onClick={tableColumn.getToggleSortingHandler()}>{column.label}<ArrowUpDown size={12} className="text-slate-400" /></button>,
-    cell: ({ getValue }) => {
+    cell: ({ getValue, row }) => {
       const value = getValue();
       if (column.kind === "status") return <StatusPill value={String(value ?? "—")} />;
       if (column.kind === "money") return <span className="tabular-nums">{formatCurrency(Number(value ?? 0))}</span>;
+      if (detailBasePath && column === columns[0] && row.original.detailId) return <Link href={`${detailBasePath}/${row.original.detailId}`} className="font-semibold text-[#0075d1] hover:underline">{String(value ?? "—")}</Link>;
       return <span>{String(value ?? "—")}</span>;
     },
-  })), [columns]);
+  })), [columns, detailBasePath]);
 
   const table = useReactTable({ data: filteredRows, columns: tableColumns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getFilteredRowModel: getFilteredRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 8 } } });
 
@@ -96,6 +103,7 @@ export function DataWorkspace({ title, description, actionLabel, searchPlacehold
   }
 
   async function exportExcel() {
+    const ExcelJS = await import("exceljs");
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "SmartVill";
     const sheet = workbook.addWorksheet(title.slice(0, 31));
@@ -135,6 +143,7 @@ export function DataWorkspace({ title, description, actionLabel, searchPlacehold
       }))];
       pdfMake.createPdf({ pageOrientation: "landscape", pageMargins: [28, 36, 28, 36], defaultStyle: { font: "NotoSansThai", fontSize: 8 }, content: [{ text: title, fontSize: 17, bold: true, color: "#172033" }, { text: description, margin: [0, 4, 0, 16], color: "#64748b" }, { table: { headerRows: 1, widths: columns.map(() => "*"), body }, layout: "lightHorizontalLines" }, { text: `รวม ${filteredRows.length} รายการ`, margin: [0, 12, 0, 0], fontSize: 8, color: "#64748b" }], styles: { tableHeader: { bold: true, fillColor: "#eaf5ff", color: "#174366" } } }).download(`${title}.pdf`);
     } catch (cause) {
+      const Swal = (await import("sweetalert2")).default;
       await Swal.fire({ icon: "error", title: "ส่งออก PDF ไม่สำเร็จ", text: cause instanceof Error ? cause.message : "กรุณาลองอีกครั้ง", confirmButtonColor: "#008BF8", customClass: { popup: "village-swal" } });
     }
   }
@@ -155,13 +164,13 @@ export function DataWorkspace({ title, description, actionLabel, searchPlacehold
           </table>
         </div>
 
-        <div className="divide-y divide-slate-100 md:hidden">{table.getRowModel().rows.length === 0 ? <p className="px-4 py-12 text-center text-[12px] text-slate-500">ไม่พบรายการที่ตรงกับการค้นหา</p> : table.getRowModel().rows.map((row) => <article key={row.id} className="space-y-2.5 px-4 py-3.5"><div className="flex items-start justify-between gap-3">{columns.slice(0, 2).map((column) => <div key={column.key} className="min-w-0"><p className="text-[10px] text-slate-400">{column.label}</p><p className="mt-0.5 truncate text-[12px] font-semibold text-slate-800">{String(row.original[column.key] ?? "—")}</p></div>)}{columns.find((column) => column.kind === "status") && <StatusPill value={String(row.original[columns.find((column) => column.kind === "status")!.key] ?? "—")} />}</div><div className="flex flex-wrap gap-x-4 gap-y-1">{columns.slice(2).filter((column) => column.kind !== "status").map((column) => <p key={column.key} className="text-[10px] text-slate-500"><span className="text-slate-400">{column.label}: </span>{column.kind === "money" ? formatCurrency(Number(row.original[column.key] ?? 0)) : String(row.original[column.key] ?? "—")}</p>)}</div></article>)}</div>
+        <div className="divide-y divide-slate-100 md:hidden">{table.getRowModel().rows.length === 0 ? <p className="px-4 py-12 text-center text-[12px] text-slate-500">ไม่พบรายการที่ตรงกับการค้นหา</p> : table.getRowModel().rows.map((row) => <article key={row.id} className="space-y-3 px-4 py-4"><div className="flex items-start gap-3"><div className="grid min-w-0 flex-1 grid-cols-2 gap-3">{columns.slice(0, 2).map((column, index) => <div key={column.key} className="min-w-0"><p className="text-[11px] text-slate-500">{column.label}</p>{detailBasePath && index === 0 && row.original.detailId ? <Link href={`${detailBasePath}/${row.original.detailId}`} className="mt-0.5 block break-words text-[13px] font-semibold leading-5 text-[#0075d1] hover:underline">{String(row.original[column.key] ?? "—")}</Link> : <p className="mt-0.5 break-words text-[13px] font-semibold leading-5 text-slate-800">{String(row.original[column.key] ?? "—")}</p>}</div>)}</div>{columns.find((column) => column.kind === "status") && <span className="shrink-0"><StatusPill value={String(row.original[columns.find((column) => column.kind === "status")!.key] ?? "—")} /></span>}</div><div className="flex flex-wrap gap-x-4 gap-y-1.5">{columns.slice(2).filter((column) => column.kind !== "status").map((column) => <p key={column.key} className="text-[11px] leading-4 text-slate-600"><span className="text-slate-500">{column.label}: </span>{column.kind === "money" ? formatCurrency(Number(row.original[column.key] ?? 0)) : String(row.original[column.key] ?? "—")}</p>)}</div></article>)}</div>
 
-        <div className="flex flex-col gap-3 border-t border-[var(--border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5"><p className="text-[10px] text-slate-500">แสดง {table.getRowModel().rows.length ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 : 0}–{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredRows.length)} จาก {filteredRows.length} รายการ</p><div className="flex items-center gap-2"><button disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()} className="flex size-8 items-center justify-center rounded-lg border border-[var(--border)] text-slate-600 disabled:opacity-40" aria-label="หน้าก่อน"><ChevronLeft size={15} /></button><span className="min-w-[76px] text-center text-[10px] text-slate-500">หน้า {table.getState().pagination.pageIndex + 1} / {Math.max(table.getPageCount(), 1)}</span><button disabled={!table.getCanNextPage()} onClick={() => table.nextPage()} className="flex size-8 items-center justify-center rounded-lg border border-[var(--border)] text-slate-600 disabled:opacity-40" aria-label="หน้าถัดไป"><ChevronRight size={15} /></button></div></div>
+        <div className="flex flex-col gap-3 border-t border-[var(--border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5"><p className="text-[11px] text-slate-600">แสดง {table.getRowModel().rows.length ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 : 0}–{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredRows.length)} จาก {filteredRows.length} รายการ</p><div className="flex items-center gap-2"><button disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()} className="flex size-10 items-center justify-center rounded-lg border border-[var(--border)] text-slate-600 disabled:opacity-40" aria-label="หน้าก่อน"><ChevronLeft size={16} /></button><span className="min-w-[84px] text-center text-[11px] text-slate-600">หน้า {table.getState().pagination.pageIndex + 1} / {Math.max(table.getPageCount(), 1)}</span><button disabled={!table.getCanNextPage()} onClick={() => table.nextPage()} className="flex size-10 items-center justify-center rounded-lg border border-[var(--border)] text-slate-600 disabled:opacity-40" aria-label="หน้าถัดไป"><ChevronRight size={16} /></button></div></div>
       </div>
 
-      <dialog ref={dialogRef} className="m-auto w-[calc(100%-28px)] max-w-[520px] rounded-2xl border border-[var(--border)] bg-white p-0 text-[var(--foreground)] shadow-[0_24px_70px_rgb(19_42_71_/_18%)] backdrop:bg-slate-950/35">
-        <form ref={formRef} onSubmit={createRow} className="space-y-5 p-5 sm:p-6"><div><h2 className="text-[18px] font-bold text-slate-900">{actionLabel}</h2><p className="mt-1 text-[12px] text-slate-500">กรอกข้อมูลเพื่อเพิ่มรายการ</p></div><div className="grid gap-4 sm:grid-cols-2">{fields.map((field) => <label key={field.key} className="space-y-1.5"><span className="text-[11px] font-semibold text-slate-700">{field.label}{field.required && <span className="ml-1 text-rose-500">*</span>}</span>{field.kind === "select" ? <select name={field.key} required={field.required} defaultValue="" className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[12px] outline-none focus:border-blue-400 focus:ring-3 focus:ring-blue-100"><option value="" disabled>เลือก{field.label}</option>{field.options?.map((option) => <option key={option}>{option}</option>)}</select> : <input name={field.key} required={field.required} type={field.kind ?? "text"} placeholder={field.placeholder} className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[12px] outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-3 focus:ring-blue-100" />}</label>)}</div>{formError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-[11px] text-rose-700">{formError}</p>}<div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4"><button type="button" onClick={() => dialogRef.current?.close()} className="h-9 rounded-lg border border-[var(--border)] px-3.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50">ยกเลิก</button><button type="submit" className="h-9 rounded-lg bg-[var(--primary)] px-4 text-[11px] font-semibold text-white hover:bg-[var(--primary-hover)]">บันทึก</button></div></form>
+      <dialog ref={dialogRef} aria-labelledby={dialogTitleId} aria-describedby={dialogDescriptionId} className="m-auto w-[calc(100%-28px)] max-w-[520px] rounded-2xl border border-[var(--border)] bg-white p-0 text-[var(--foreground)] shadow-[0_24px_70px_rgb(19_42_71_/_18%)] backdrop:bg-slate-950/35">
+        <form ref={formRef} onSubmit={createRow} className="space-y-5 p-5 sm:p-6"><div><h2 id={dialogTitleId} className="text-[18px] font-bold text-slate-900">{actionLabel}</h2><p id={dialogDescriptionId} className="mt-1 text-[12px] text-slate-500">กรอกข้อมูลเพื่อเพิ่มรายการ</p></div><div className="grid gap-4 sm:grid-cols-2">{fields.map((field, index) => <label key={field.key} className="space-y-1.5"><span className="text-[11px] font-semibold text-slate-700">{field.label}{field.required && <span className="ml-1 text-rose-500">*</span>}</span>{field.kind === "autocomplete" ? <Autocomplete name={field.key} required={field.required} autoFocus={index === 0} placeholder={field.placeholder ?? `ค้นหา${field.label}...`} options={(field.options ?? []).filter((option): option is AutocompleteOption => typeof option !== "string")} /> : field.kind === "select" ? <select name={field.key} required={field.required} defaultValue="" autoFocus={index === 0} className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[12px] outline-none focus:border-blue-400 focus:ring-3 focus:ring-blue-100"><option value="" disabled>เลือก{field.label}</option>{field.options?.map((option) => { const item = typeof option === "string" ? { value: option, label: option } : option; return <option key={item.value} value={item.value}>{item.label}</option>; })}</select> : <input name={field.key} required={field.required} type={field.kind ?? "text"} autoFocus={index === 0} placeholder={field.placeholder} className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[12px] outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-3 focus:ring-blue-100" />}</label>)}</div>{formError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-[11px] text-rose-700">{formError}</p>}<div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4"><button type="button" onClick={() => dialogRef.current?.close()} className="h-9 rounded-lg border border-[var(--border)] px-3.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50">ยกเลิก</button><button type="submit" className="h-9 rounded-lg bg-[var(--primary)] px-4 text-[11px] font-semibold text-white hover:bg-[var(--primary-hover)]">บันทึก</button></div></form>
       </dialog>
     </div>
   );

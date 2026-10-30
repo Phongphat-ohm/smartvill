@@ -4,12 +4,12 @@ import { createServerSupabaseClient, isSupabaseConfigured } from "@/lib/supabase
 export default async function BillingPage() {
   if (!isSupabaseConfigured()) return <WaterBilling />;
   const supabase = await createServerSupabaseClient();
-  const { data: allowed } = await supabase.rpc("has_permission", { permission_key: "water.invoice.view" });
-  if (!allowed) return <p className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">บัญชีนี้ไม่มีสิทธิ์ดูใบแจ้งหนี้</p>;
-  const [{ data, error }, { data: readingData }] = await Promise.all([
+  const [{ data: allowed }, { data, error }, { data: readingData }] = await Promise.all([
+    supabase.rpc("has_permission", { permission_key: "water.invoice.view" }),
     supabase.from("water_invoices").select("id,invoice_number,period_end,total_amount,paid_amount,status,connection:water_connections(account_name,household:households(house_number))").order("period_end", { ascending: false }).limit(1000),
     supabase.from("meter_readings").select("id,usage,meter:water_meters(connection:water_connections(account_name,household:households(house_number))),invoice:water_invoices(id)").eq("status", "recorded").order("reading_date", { ascending: false }).limit(1000),
   ]);
+  if (!allowed) return <p className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">บัญชีนี้ไม่มีสิทธิ์ดูใบแจ้งหนี้</p>;
   if (error) return <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">โหลดใบแจ้งหนี้ไม่สำเร็จ ตรวจสอบ migration และ RLS</div>;
   const statusLabel: Record<string, string> = { open: "รอชำระ", partially_paid: "ชำระบางส่วน", paid: "ชำระแล้ว", overdue: "เกินกำหนด", needs_review: "รอตรวจมิเตอร์", void: "ยกเลิก" };
   const rows = (data ?? []).map((invoice) => {

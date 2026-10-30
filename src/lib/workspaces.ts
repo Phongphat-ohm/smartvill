@@ -27,7 +27,11 @@ export const workspaces: Record<string, WorkspaceConfig> = {
       { key: "houseNumber", label: "บ้านเลขที่", required: true }, { key: "moo", label: "หมู่ที่", required: true }, { key: "road", label: "ถนน" },
       { key: "subdistrict", label: "ตำบล/แขวง", required: true }, { key: "district", label: "อำเภอ/เขต", required: true },
       { key: "province", label: "จังหวัด", required: true }, { key: "postalCode", label: "รหัสไปรษณีย์", required: true },
-      { key: "type", label: "ประเภท", kind: "select", required: true, options: ["residential", "commercial", "mixed"] },
+      { key: "type", label: "ประเภทครัวเรือน", kind: "select", required: true, options: [
+        { value: "residential", label: "ที่อยู่อาศัย" },
+        { value: "commercial", label: "พาณิชยกรรม" },
+        { value: "mixed", label: "ที่อยู่อาศัยและพาณิชยกรรม" },
+      ] },
     ],
     initialRows: householdRows,
     filters: ["ทั้งหมด", "มีผู้อยู่อาศัย", "ย้ายออก"],
@@ -44,7 +48,7 @@ export const workspaces: Record<string, WorkspaceConfig> = {
     fields: [
       { key: "firstName", label: "ชื่อ", required: true }, { key: "lastName", label: "นามสกุล", required: true },
       { key: "nationalId", label: "เลขบัตรประชาชน (ไม่บังคับ)" }, { key: "birthDate", label: "วันเกิด", kind: "date" },
-      { key: "phone", label: "เบอร์โทรศัพท์" }, { key: "householdId", label: "รหัสครัวเรือน", required: true },
+      { key: "phone", label: "เบอร์โทรศัพท์" }, { key: "householdId", label: "ครัวเรือน", kind: "autocomplete", required: true, placeholder: "ค้นหาบ้านเลขที่หรือหมู่..." },
       { key: "relationship", label: "ความสัมพันธ์", kind: "select", required: true, options: ["หัวหน้าครัวเรือน", "คู่สมรส", "บุตร", "ญาติ", "ผู้อาศัย"] },
     ],
     initialRows: residentRows,

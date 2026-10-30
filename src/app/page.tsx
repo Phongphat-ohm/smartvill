@@ -1,5 +1,43 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { ArrowRight, Building2, ChartNoAxesCombined, CheckCircle2, Droplets, House, MapPinned, ShieldCheck, Users, Wallet } from "lucide-react";
+import { createServerSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
-export default function Home() {
-  redirect("/dashboard");
+const modules = [
+  { title: "ทะเบียนครัวเรือน", detail: "จัดเก็บบ้านเลขที่ สมาชิก และสถานะการอยู่อาศัยอย่างเป็นระบบ", icon: House },
+  { title: "ประปาหมู่บ้าน", detail: "อ่านมิเตอร์ ออกใบแจ้งหนี้ รับชำระ และติดตามยอดค้าง", icon: Droplets },
+  { title: "การเงินและกองทุน", detail: "บันทึกรายการ อนุมัติธุรกรรม และตรวจสอบสถานะกองทุน", icon: Wallet },
+  { title: "รายงานที่ตรวจสอบได้", detail: "สรุปข้อมูลสำคัญตามสิทธิ์ พร้อมส่งออกเพื่อใช้ประกอบการทำงาน", icon: ChartNoAxesCombined },
+];
+
+const highlights = ["กำหนดสิทธิ์ตามบทบาทของเจ้าหน้าที่", "ออกแบบให้อ่านง่ายทั้งสำนักงานและภาคสนาม", "เก็บประวัติการทำงานเพื่อการตรวจสอบ"];
+
+export default async function Home() {
+  let isAuthenticated = false;
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createServerSupabaseClient();
+      const { data } = await supabase.auth.getClaims();
+      isAuthenticated = Boolean(data?.claims?.sub);
+    } catch {
+      // Keep the public homepage available if an expired or unavailable session cannot be read.
+    }
+  }
+
+  const primaryHref = isAuthenticated ? "/dashboard" : "/login";
+  const primaryLabel = isAuthenticated ? "ไปที่แดชบอร์ด" : "เข้าสู่ระบบ";
+
+  return <main className="min-h-screen overflow-x-hidden bg-[var(--background)] text-[var(--foreground)]">
+    <header className="border-b border-[var(--border)] bg-white/95 backdrop-blur-sm"><nav aria-label="เมนูหลัก" className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-5 sm:px-8"><Link href="/" className="flex items-center gap-3 rounded-lg focus-visible:outline-offset-4"><span className="flex size-10 items-center justify-center rounded-xl bg-[var(--primary)] text-white shadow-sm"><MapPinned aria-hidden="true" size={20} strokeWidth={2.25} /></span><span><strong className="block text-[16px] tracking-[-0.025em]">SmartVill</strong><span className="block text-[11px] text-[var(--muted-foreground)]">ระบบบริหารจัดการหมู่บ้าน</span></span></Link><div className="flex items-center gap-2 sm:gap-5"><a href="#modules" className="hidden text-sm font-medium text-slate-600 transition-colors hover:text-slate-950 sm:block">โมดูลระบบ</a><a href="#benefits" className="hidden text-sm font-medium text-slate-600 transition-colors hover:text-slate-950 sm:block">จุดเด่น</a><Link href={primaryHref} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--primary)] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--primary-hover)] sm:px-5">{primaryLabel}<ArrowRight aria-hidden="true" className="ml-2" size={16} /></Link></div></nav></header>
+
+    <section className="relative isolate overflow-hidden"><div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[480px] bg-[radial-gradient(ellipse_at_top,_#dff1ff_0%,_transparent_68%)]" /><div className="mx-auto grid max-w-6xl gap-12 px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-24 lg:grid-cols-[1.08fr_.92fr] lg:items-center lg:gap-16"><div><p className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/75 px-3 py-1.5 text-xs font-semibold text-blue-800"><span className="size-1.5 rounded-full bg-[var(--primary)]" />ศูนย์รวมงานบริหารหมู่บ้าน</p><h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.18] tracking-[-0.045em] text-slate-950 sm:text-5xl lg:text-[58px]">งานหมู่บ้าน<br /><span className="text-[var(--primary-hover)]">ชัดเจนขึ้นในที่เดียว</span></h1><p className="mt-6 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">SmartVill ช่วยให้เจ้าหน้าที่จัดการทะเบียนครัวเรือน ประปา การเงิน กองทุน และรายงานประจำวันจากพื้นที่ทำงานเดียวที่ปลอดภัยและตรวจสอบได้</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href={primaryHref} className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--primary)] px-5 text-sm font-semibold text-white shadow-[0_8px_20px_rgb(0_139_248_/_22%)] transition-colors hover:bg-[var(--primary-hover)]">{isAuthenticated ? "เปิดพื้นที่ทำงาน" : "เข้าสู่ระบบสำหรับเจ้าหน้าที่"}<ArrowRight aria-hidden="true" className="ml-2" size={17} /></Link><a href="#modules" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[var(--border-strong)] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">ดูโมดูลทั้งหมด</a></div><ul className="mt-8 grid gap-3 text-sm text-slate-600 sm:grid-cols-3">{highlights.map((highlight) => <li key={highlight} className="flex items-start gap-2"><CheckCircle2 aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--success)]" size={17} />{highlight}</li>)}</ul></div>
+      <div className="relative mx-auto w-full max-w-[480px] rounded-3xl border border-blue-100 bg-white p-4 shadow-[0_24px_64px_rgb(35_92_139_/_14%)] sm:p-5"><div className="flex items-center justify-between border-b border-[var(--border)] pb-4"><div className="flex items-center gap-2"><span className="flex size-9 items-center justify-center rounded-xl bg-[var(--primary-soft)] text-[var(--primary-hover)]"><Building2 aria-hidden="true" size={18} /></span><div><p className="text-sm font-bold text-slate-900">ภาพรวมหมู่บ้าน</p><p className="text-xs text-[var(--muted-foreground)]">ข้อมูลสำหรับเจ้าหน้าที่</p></div></div><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">พร้อมใช้งาน</span></div><div className="grid grid-cols-2 gap-3 py-5"><Metric icon={House} label="ครัวเรือน" value="จัดการได้ครบ" /><Metric icon={Users} label="ประชากร" value="ค้นหาได้รวดเร็ว" /><Metric icon={Droplets} label="งานประปา" value="ติดตามเป็นรอบ" /><Metric icon={Wallet} label="กองทุน" value="ตรวจสอบได้" /></div><div className="rounded-2xl bg-slate-50 p-4"><div className="flex items-center justify-between"><div><p className="text-sm font-bold text-slate-900">เริ่มงานวันนี้</p><p className="mt-1 text-xs text-slate-500">เลือกเมนูที่ต้องการจากพื้นที่ทำงาน</p></div><span className="flex size-10 items-center justify-center rounded-full bg-white text-[var(--primary)] shadow-sm"><ArrowRight aria-hidden="true" size={18} /></span></div></div></div></div></section>
+
+    <section id="modules" className="border-y border-[var(--border)] bg-white py-16 sm:py-20"><div className="mx-auto max-w-6xl px-5 sm:px-8"><div className="max-w-2xl"><p className="text-sm font-semibold text-[var(--primary-hover)]">ครอบคลุมงานสำคัญ</p><h2 className="mt-2 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl">ระบบเดียวสำหรับงานประจำของหมู่บ้าน</h2><p className="mt-4 text-base leading-7 text-slate-600">ลดการค้นหาเอกสารซ้ำซ้อน และทำให้ข้อมูลพร้อมใช้ในเวลาที่ต้องตัดสินใจ</p></div><div className="mt-10 grid gap-4 sm:grid-cols-2">{modules.map(({ title, detail, icon: Icon }) => <article key={title} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 transition-shadow hover:shadow-[var(--shadow-soft)] sm:p-6"><span className="flex size-11 items-center justify-center rounded-xl bg-[var(--primary-soft)] text-[var(--primary-hover)]"><Icon aria-hidden="true" size={21} /></span><h3 className="mt-5 text-lg font-bold text-slate-900">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{detail}</p></article>)}</div></div></section>
+    <section id="benefits" className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20"><div className="rounded-3xl bg-slate-950 px-6 py-10 text-white sm:px-10 sm:py-12"><ShieldCheck aria-hidden="true" className="text-sky-300" size={28} /><div className="mt-5 max-w-2xl"><h2 className="text-3xl font-bold tracking-[-0.035em] sm:text-4xl">ข้อมูลอยู่ในมือที่เหมาะสม</h2><p className="mt-4 text-base leading-7 text-sky-100">แต่ละบทบาทเห็นและทำงานได้เท่าที่จำเป็น ช่วยให้การจัดการข้อมูลหมู่บ้านมีความเป็นระเบียบและตรวจสอบย้อนหลังได้</p></div><Link href={primaryHref} className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-semibold text-slate-900 transition-colors hover:bg-sky-50">{isAuthenticated ? "กลับสู่แดชบอร์ด" : "เข้าสู่ระบบ"}<ArrowRight aria-hidden="true" className="ml-2" size={16} /></Link></div></section>
+    <footer className="border-t border-[var(--border)] bg-white"><div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-7 text-sm text-[var(--muted-foreground)] sm:flex-row sm:items-center sm:justify-between sm:px-8"><span>© {new Date().getFullYear() + 543} SmartVill</span><span>ระบบบริหารจัดการหมู่บ้านสำหรับเจ้าหน้าที่</span></div></footer>
+  </main>;
+}
+
+function Metric({ icon: Icon, label, value }: { icon: typeof House; label: string; value: string }) {
+  return <div className="rounded-2xl border border-[var(--border)] p-3.5"><Icon aria-hidden="true" className="text-[var(--primary)]" size={18} /><p className="mt-3 text-xs text-[var(--muted-foreground)]">{label}</p><p className="mt-1 text-sm font-bold text-slate-900">{value}</p></div>;
 }

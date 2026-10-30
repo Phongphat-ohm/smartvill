@@ -1,38 +1,86 @@
 {
-  "product": "Village Management System",
-  "direction": "Calm, operational Thai-language workspace for village staff. Prioritize record lookup, clear workflow status, and traceable actions over decorative UI.",
-  "tokens": {
-    "color": {
-      "primary": "#008BF8",
-      "primaryHover": "#0075D1",
-      "primarySoft": "#EAF5FF",
-      "background": "#F5F8FC",
-      "surface": "#FFFFFF",
-      "surfaceSubtle": "#F8FAFC",
-      "foreground": "#172033",
-      "mutedForeground": "#64748B",
-      "border": "#E4EAF2",
-      "borderStrong": "#D5DEEA",
-      "success": "#16845B",
-      "successSoft": "#E8F7EF",
-      "warning": "#A96508",
-      "warningSoft": "#FFF4DF",
-      "danger": "#C24148",
-      "dangerSoft": "#FFF0EF"
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T08:23:19+07:00",
+  "title": "Design System: Village Management",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Village Service Blue", "canonical": "#008BF8", "tonalRamp": ["oklch(0.24 0.08 243)", "oklch(0.36 0.13 243)", "oklch(0.48 0.18 243)", "#0075D1", "#008BF8", "oklch(0.71 0.12 243)", "#EAF5FF", "oklch(0.96 0.02 243)"] },
+      "background": { "role": "neutral", "displayName": "Operational Canvas", "canonical": "#F5F8FC", "tonalRamp": ["#172033", "#64748B", "#D5DEEA", "#E4EAF2", "#F1F5F9", "#F5F8FC", "#F8FAFC", "#FFFFFF"] },
+      "success": { "role": "semantic", "displayName": "Confirmed Green", "canonical": "#16845B", "tonalRamp": ["oklch(0.25 0.06 155)", "oklch(0.36 0.09 155)", "#16845B", "oklch(0.62 0.1 155)", "oklch(0.76 0.07 155)", "#E8F7EF", "oklch(0.94 0.03 155)", "oklch(0.98 0.01 155)"] },
+      "warning": { "role": "semantic", "displayName": "Attention Amber", "canonical": "#A96508", "tonalRamp": ["oklch(0.28 0.06 70)", "oklch(0.4 0.1 70)", "#A96508", "oklch(0.66 0.12 70)", "oklch(0.8 0.09 70)", "#FFF4DF", "oklch(0.95 0.03 70)", "oklch(0.99 0.01 70)"] },
+      "danger": { "role": "semantic", "displayName": "Review Red", "canonical": "#C24148", "tonalRamp": ["oklch(0.28 0.08 20)", "oklch(0.4 0.13 20)", "#C24148", "oklch(0.64 0.16 20)", "oklch(0.79 0.1 20)", "#FFF0EF", "oklch(0.95 0.03 20)", "oklch(0.99 0.01 20)"] }
     },
-    "font": "Noto Sans Thai Variable",
-    "radius": "10px",
-    "shadow": "0 8px 24px rgb(31 65 104 / 6%)",
-    "timezone": "Asia/Bangkok",
-    "calendar": "Buddhist Era"
+    "typographyMeta": {
+      "headline": { "displayName": "Thai Operational Headline", "purpose": "Page titles at 24–28px with bold weight and compact tracking." },
+      "body": { "displayName": "Noto Sans Thai Variable", "purpose": "Thai-first operational copy, form labels, table content, and supporting metadata." },
+      "label": { "displayName": "Compact Utility Label", "purpose": "Readable 11–12px labels, status text, table headers, and secondary details." }
+    },
+    "shadows": [
+      { "name": "soft-separation", "value": "0 8px 24px rgb(31 65 104 / 6%)", "purpose": "Use only where a dialog or elevated layer needs separation from the operational canvas." },
+      { "name": "dialog-elevation", "value": "0 24px 70px rgb(19 42 71 / 18%)", "purpose": "SweetAlert2 and native dialog surfaces." }
+    ],
+    "motion": [
+      { "name": "state-transition", "value": "200ms ease", "purpose": "Navigation, button, and progress state changes; respect reduced-motion preferences." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
   },
-  "patterns": {
-    "navigation": "Persistent desktop sidebar; mobile drawer.",
-    "actions": "Blue primary, neutral secondary, restrained red destructive.",
-    "status": "Text-labelled semantic badges; color is supplemental.",
-    "forms": "Inline field validation; SweetAlert2 for consequential confirmation and outcomes.",
-    "data": "Searchable compact tables on desktop; stacked readable records on mobile.",
-    "charts": "Recharts with labelled units/date ranges and actionable record context."
-  },
-  "sourceOfTruth": ["src/app/globals.css", "src/components/ui/", "src/lib/format.ts"]
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The primary commit action for a page or form.",
+      "html": "<button class=\"ds-btn-primary\">บันทึกรายการ</button>",
+      "css": ".ds-btn-primary { min-height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--primary, #008BF8); color: #fff; font: 600 12px 'Noto Sans Thai Variable', sans-serif; cursor: pointer; transition: background 200ms ease, transform 200ms ease; } .ds-btn-primary:hover { background: var(--primary-hover, #0075D1); } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 3px solid rgb(0 139 248 / 35%); outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "A compact search field used above operational data lists.",
+      "html": "<label class=\"ds-search\"><span>ค้นหารายการ</span><input placeholder=\"ค้นหาบ้านเลขที่หรือชื่อ\" /></label>",
+      "css": ".ds-search { display: grid; gap: 6px; color: #172033; font: 600 11px 'Noto Sans Thai Variable', sans-serif; } .ds-search input { height: 40px; min-width: 240px; padding: 0 12px; border: 1px solid #E4EAF2; border-radius: 10px; background: #fff; color: #172033; font: 400 12px 'Noto Sans Thai Variable', sans-serif; } .ds-search input::placeholder { color: #94A3B8; } .ds-search input:focus { border-color: #008BF8; outline: 3px solid rgb(0 139 248 / 16%); outline-offset: 0; }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "status-semantic",
+      "description": "Text-labelled semantic state that never relies on color alone.",
+      "html": "<span class=\"ds-chip\">บันทึกแล้ว</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 10px; border-radius: 999px; background: #E8F7EF; color: #16845B; font: 600 11px/1.4 'Noto Sans Thai Variable', sans-serif; white-space: nowrap; }"
+    },
+    {
+      "name": "Operational Card",
+      "kind": "card",
+      "refersTo": "surface-card",
+      "description": "Flat, bordered content surface for tables, summaries, and workflow panels.",
+      "html": "<section class=\"ds-card\"><h3>รายการที่ต้องดำเนินการ</h3><p>สรุปข้อมูลที่เกี่ยวข้องกับงานถัดไป</p></section>",
+      "css": ".ds-card { padding: 20px; border: 1px solid #E4EAF2; border-radius: 16px; background: #fff; color: #172033; font-family: 'Noto Sans Thai Variable', sans-serif; } .ds-card h3 { margin: 0; font-size: 15px; line-height: 1.4; } .ds-card p { margin: 6px 0 0; color: #64748B; font-size: 12px; line-height: 1.5; }"
+    },
+    {
+      "name": "Sidebar Navigation Item",
+      "kind": "nav",
+      "refersTo": "nav-sidebar-active",
+      "description": "Persistent desktop navigation with a restrained blue active state.",
+      "html": "<a class=\"ds-nav-item ds-nav-item-active\" href=\"#\">ภาพรวม</a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 10px; color: #475569; font: 500 13px 'Noto Sans Thai Variable', sans-serif; text-decoration: none; transition: background 200ms ease, color 200ms ease; } .ds-nav-item:hover { background: #F8FAFC; color: #172033; } .ds-nav-item-active { background: #EAF5FF; color: #0075D1; } .ds-nav-item:focus-visible { outline: 3px solid rgb(0 139 248 / 35%); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Calm Civic Workspace",
+    "overview": "A restrained, Thai-first operations workspace for village staff. The interface makes record lookup, financial status, water service actions, and traceable next steps feel dependable rather than ornamental.\n\nDensity is compact enough for office workflows while mobile layouts turn wide records into readable stacked content. Blue signals the route to action; semantic colors explain state and never stand alone.",
+    "keyCharacteristics": ["Calm operational hierarchy", "Thai-first readable typography", "Traceable action over decoration", "Semantic status with explicit labels", "Desktop sidebar and mobile drawer"],
+    "rules": [
+      { "name": "One Action Rule", "body": "Use the primary blue for the most important action or active state; do not use it as decoration on every element.", "section": "colors" },
+      { "name": "Readable Record Rule", "body": "Mobile records stack and wrap meaningful values instead of hiding them behind truncation or horizontal scrolling.", "section": "typography" },
+      { "name": "Flat-First Rule", "body": "Use borders and tonal surfaces by default. Reserve shadows for dialogs and layers that need separation.", "section": "elevation" }
+    ],
+    "dos": ["Do use the canonical CSS variables from src/app/globals.css.", "Do pair semantic color with readable status text or an icon.", "Do preserve visible focus and keyboard operation.", "Do keep primary touch targets at least 40px high."],
+    "donts": ["Don't use blue as decoration on every element.", "Don't shrink essential Thai labels below readable sizes on mobile.", "Don't force wide data tables into horizontal scrolling on mobile.", "Don't use alert dialogs for ordinary field validation."]
+  }
 }
