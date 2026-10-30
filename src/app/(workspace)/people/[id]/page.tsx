@@ -1,21 +1,51 @@
 import { notFound } from "next/navigation";
 import { ResidentDetail } from "@/components/registry-detail";
-import { createServerSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { currentUserWithPermission, hasPermission, logDataError } from "@/lib/data-access";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 
 export default async function ResidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!isSupabaseConfigured()) return <div className="rounded-xl border border-sky-100 bg-sky-50 p-5 text-sm text-sky-900">หน้ารายละเอียดทะเบียนใช้ได้เมื่อเชื่อมต่อ Supabase</div>;
-  const supabase = await createServerSupabaseClient();
-  const [{ data: canView }, { data: canEdit }, { data: canSensitive }, { data, error }, { data: householdRows }] = await Promise.all([
-    supabase.rpc("has_permission", { permission_key: "registry.resident.view" }),
-    supabase.rpc("has_permission", { permission_key: "registry.resident.update" }),
-    supabase.rpc("has_permission", { permission_key: "registry.resident.sensitive.read" }),
-    supabase.from("residents").select("id,first_name,last_name,birth_date,phone,residency_status,national_id_ciphertext,memberships:household_memberships(relationship,is_head,move_in_at,move_out_at,move_reason,household:households(id,house_number,moo))").eq("id", id).maybeSingle(),
-    supabase.from("households").select("id,house_number,moo").neq("occupancy_status", "archived").order("house_number").limit(1000),
-  ]);
-  if (!canView) return <p className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">บัญชีนี้ไม่มีสิทธิ์ดูข้อมูลประชากร</p>;
-  if (error) return <p className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-800">โหลดข้อมูลประชากรไม่สำเร็จ</p>;
-  if (!data) notFound();
-  const history = (data.memberships ?? []).map((item) => { const household = item.household as unknown as { id: string; house_number: string; moo: string } | null; return { householdId: household?.id ?? "", householdLabel: household ? `บ้านเลขที่ ${household.house_number} หมู่ ${household.moo}` : "ไม่พบครัวเรือน", relationship: item.relationship, isHead: item.is_head, moveInAt: item.move_in_at, moveOutAt: item.move_out_at, moveReason: item.move_reason }; }).sort((a, b) => b.moveInAt.localeCompare(a.moveInAt));
-  return <ResidentDetail resident={{ id: data.id, firstName: data.first_name, lastName: data.last_name, birthDate: data.birth_date ?? "", phone: data.phone ?? "", status: data.residency_status, hasNationalId: Boolean(data.national_id_ciphertext) }} history={history} households={(householdRows ?? []).map((item) => ({ id: item.id, label: `บ้านเลขที่ ${item.house_number} หมู่ ${item.moo}` }))} canEdit={Boolean(canEdit)} canSensitive={Boolean(canSensitive)} />;
+  if (!isSupabaseConfigured()) return <div className="rounded-xl border border-sky-100 bg-sky-50 p-5 text-sm text-sky-900">หน้ารายละเอียดทะเบียนใช้ได้เมื่อเชื่อมต่อระบบ</div>;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  let canEdit = false; let canSensitive = false;
+  try {
+    const { profile, allowed } = await currentUserWithPermission("registry.resident.view");
+    if (!allowed || !profile) return <p className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">บัญชีนี้ไม่มีสิทธิ์ดูข้อมูลประชากร</p>;
+    [canEdit, canSensitive] = await Promise.all([hasPermission("registry.resident.update", profile), hasPermission("registry.resident.sensitive.read", profile)]);
+  } catch (error) {
+    const requestId = await logDataError("people.detail.authorization", error);
+    return <div role="alert" className="space-y-2 rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-800"><p>ตรวจสอบสิทธิ์หรือโหลดข้อมูลประชากรไม่สำเร็จ</p><p>รหัสอ้างอิงสำหรับแจ้งผู้ดูแล: <code>{requestId}</code></p></div>;
+  }
+  try {
+    const resident = await prisma.resident.findUnique({
+        where: { id },
+        select: {
+          id: true, firstName: true, lastName: true, birthDate: true, phone: true,
+          residencyStatus: true, nationalIdCiphertext: true, deceasedAt: true, deathReason: true,
+          memberships: {
+            select: {
+              relationship: true, isHead: true, moveInAt: true, moveOutAt: true, moveReason: true,
+              household: { select: { id: true, houseNumber: true, moo: true } },
+            },
+            orderBy: { moveInAt: "desc" },
+          },
+        },
+      });
+    if (!resident) notFound();
+    const history = resident.memberships.map((item) => ({
+      householdId: item.household.id,
+      householdLabel: `บ้านเลขที่ ${item.household.houseNumber} หมู่ ${item.household.moo}`,
+      relationship: item.isHead ? "หัวหน้าครัวเรือน" : item.relationship === "หัวหน้าครัวเรือน" ? "สมาชิก" : item.relationship,
+      isHead: item.isHead,
+      moveInAt: item.moveInAt.toISOString().slice(0, 10),
+      moveOutAt: item.moveOutAt?.toISOString().slice(0, 10) ?? null,
+      moveReason: item.moveReason,
+    }));
+    return <ResidentDetail resident={{ id: resident.id, firstName: resident.firstName, lastName: resident.lastName, birthDate: resident.birthDate?.toISOString().slice(0, 10) ?? "", phone: resident.phone ?? "", status: resident.residencyStatus.toLowerCase(), hasNationalId: Boolean(resident.nationalIdCiphertext), deceasedAt: resident.deceasedAt?.toISOString().slice(0, 10) ?? null, deathReason: resident.deathReason }} history={history} canEdit={canEdit} canSensitive={canSensitive} />;
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && String(error.digest).startsWith("NEXT_")) throw error;
+    const requestId = await logDataError("people.detail.load", error);
+    return <div role="alert" className="space-y-2 rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-800"><p>โหลดข้อมูลประชากรไม่สำเร็จ</p><p>รหัสอ้างอิงสำหรับแจ้งผู้ดูแล: <code>{requestId}</code></p></div>;
+  }
 }

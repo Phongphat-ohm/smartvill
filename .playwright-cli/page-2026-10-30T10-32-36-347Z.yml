@@ -1,0 +1,24 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - link "กลับหน้าระบบ" [ref=e5] [cursor=pointer]:
+        - /url: /dashboard
+      - generic [ref=e14]:
+        - paragraph [ref=e15]: SmartVill
+        - paragraph [ref=e16]: ระบบบริหารจัดการหมู่บ้าน
+      - heading "เข้าสู่ระบบ" [level=2] [ref=e22]
+      - paragraph [ref=e23]: ใช้บัญชีเจ้าหน้าที่เพื่อจัดการข้อมูลหมู่บ้าน
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - text: ชื่อผู้ใช้หรืออีเมล
+          - textbox "ชื่อผู้ใช้หรืออีเมล" [ref=e26]:
+            - /placeholder: กรอกชื่อผู้ใช้หรืออีเมล
+        - generic [ref=e27]:
+          - text: รหัสผ่าน
+          - textbox "รหัสผ่าน" [ref=e28]:
+            - /placeholder: กรอกรหัสผ่าน
+        - link "ลืมรหัสผ่าน?" [ref=e30] [cursor=pointer]:
+          - /url: /forgot-password
+        - button "เข้าสู่ระบบ" [ref=e31] [cursor=pointer]
+      - paragraph [ref=e32]: เฉพาะเจ้าหน้าที่ที่ได้รับคำเชิญจากผู้ดูแลระบบการใช้งานถูกบันทึกเพื่อตรวจสอบความปลอดภัย
+  - alert [ref=e33]

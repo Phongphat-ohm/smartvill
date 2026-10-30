@@ -11,11 +11,44 @@ const initialState = { ok: false, message: "" };
 export default function LoginPage() {
   const [state, action, pending] = useActionState(loginAction, initialState);
   const demo = !isSupabaseConfigured();
-  return <main className="grid min-h-screen bg-white lg:grid-cols-[1fr_0.9fr]"><section className="relative hidden min-h-screen overflow-hidden bg-[#eaf5ff] p-10 lg:flex lg:flex-col lg:justify-between xl:p-14"><Link href="/dashboard" className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-[13px] bg-[var(--primary)] text-white"><MapPinned size={20} /></span><span><strong className="block text-[16px]">SmartVill</strong><span className="text-[11px] text-slate-500">ระบบบริหารจัดการหมู่บ้าน</span></span></Link><div className="relative z-10 max-w-[530px]"><p className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/75 px-3 py-1.5 text-[11px] font-semibold text-blue-700"><span className="size-1.5 rounded-full bg-blue-500" />พื้นที่ทำงานสำหรับเจ้าหน้าที่</p><h1 className="text-[42px] font-bold leading-[1.2] tracking-[-0.04em] text-slate-900">งานหมู่บ้าน<br />เป็นระบบในที่เดียว</h1><p className="mt-5 max-w-[410px] text-[14px] leading-7 text-slate-600">ดูแลทะเบียนครัวเรือน บริการประปา การเงิน กองทุน และร้านค้าชุมชน พร้อมประวัติการทำงานที่ตรวจสอบได้</p><div className="mt-10 flex gap-8 border-t border-blue-200/70 pt-5"><div><p className="text-[20px] font-bold text-slate-900">1,000+</p><p className="mt-1 text-[10px] text-slate-500">ครัวเรือนที่รองรับ</p></div><div><p className="text-[20px] font-bold text-slate-900">ครบทุกงาน</p><p className="mt-1 text-[10px] text-slate-500">ทะเบียนถึงการเงิน</p></div></div></div><div className="relative h-36 overflow-hidden rounded-2xl border border-blue-100 bg-white/75 p-5"><div className="flex items-center justify-between"><div><p className="text-[11px] font-semibold text-slate-700">ภาพรวมการทำงาน</p><p className="mt-1 text-[10px] text-slate-500">รอบอ่านมิเตอร์เดือนตุลาคม</p></div><span className="rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">ดำเนินการ</span></div><div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-[68%] rounded-full bg-[var(--primary)]" /></div><div className="mt-2 flex justify-between text-[9px] text-slate-400"><span>อ่านแล้ว 573 มิเตอร์</span><span>68%</span></div></div></section>
-    <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-10"><div className="w-full max-w-[390px]"><Link href="/dashboard" className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 hover:text-slate-800 lg:hidden"><ArrowLeft size={14} />กลับหน้าระบบ</Link><div className="mb-8 mt-9 flex items-center gap-3 lg:hidden"><span className="flex size-10 items-center justify-center rounded-[13px] bg-[var(--primary)] text-white"><MapPinned size={20} /></span><div><p className="text-[15px] font-bold">SmartVill</p><p className="text-[10px] text-slate-500">ระบบบริหารจัดการหมู่บ้าน</p></div></div><span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><LockKeyhole size={20} /></span><h2 className="text-[26px] font-bold tracking-[-0.03em] text-slate-900">เข้าสู่ระบบ</h2><p className="mt-1.5 text-[12px] text-slate-500">ใช้บัญชีเจ้าหน้าที่เพื่อจัดการข้อมูลหมู่บ้าน</p>
-      {demo && <div className="mt-5 rounded-xl border border-sky-100 bg-sky-50 px-3.5 py-3 text-[11px] leading-5 text-sky-800">ยังไม่ได้ตั้งค่า Supabase · เข้าใช้งานหน้าจอตัวอย่างได้โดยไม่ต้องเข้าสู่ระบบ</div>}
-      {state.message && <p role="status" className={`mt-4 rounded-lg px-3 py-2.5 text-[11px] ${state.ok ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-700"}`}>{state.message}</p>}
-      <form action={action} className="mt-6 space-y-4"><label className="block space-y-1.5"><span className="text-[11px] font-semibold text-slate-700">ชื่อผู้ใช้หรืออีเมล</span><input name="login" type="text" autoComplete="username" required className="h-11 w-full rounded-lg border border-[var(--border)] px-3.5 text-[12px] outline-none focus:border-blue-400 focus:ring-3 focus:ring-blue-100" placeholder="กรอกชื่อผู้ใช้หรืออีเมล" /></label><label className="block space-y-1.5"><span className="text-[11px] font-semibold text-slate-700">รหัสผ่าน</span><input name="password" type="password" autoComplete="current-password" required className="h-11 w-full rounded-lg border border-[var(--border)] px-3.5 text-[12px] outline-none focus:border-blue-400 focus:ring-3 focus:ring-blue-100" placeholder="กรอกรหัสผ่าน" /></label><div className="flex justify-end"><Link href="/forgot-password" className="text-[10px] font-medium text-[#0075d1] hover:underline">ลืมรหัสผ่าน?</Link></div><button disabled={pending || demo} type="submit" className="h-11 w-full rounded-lg bg-[var(--primary)] text-[12px] font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:bg-slate-300">{pending ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}</button></form>
-      {demo && <Link href="/dashboard" className="mt-3 flex h-10 w-full items-center justify-center rounded-lg border border-[var(--border)] text-[11px] font-semibold text-slate-600 hover:bg-slate-50">เปิดโหมดสาธิต</Link>}
-      <p className="mt-8 text-center text-[11px] leading-5 text-slate-500">เฉพาะเจ้าหน้าที่ที่ได้รับคำเชิญจากผู้ดูแลระบบ<br />การใช้งานถูกบันทึกเพื่อตรวจสอบความปลอดภัย</p></div></section></main>;
+  return (
+    <main className="grid min-h-screen bg-white lg:grid-cols-[1fr_0.9fr]">
+      <section className="relative hidden min-h-screen overflow-hidden bg-[#eaf5ff] p-10 lg:flex lg:flex-col lg:justify-center xl:px-20">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <span className="flex size-10 items-center justify-center rounded-[13px] bg-[var(--primary)] text-white"><MapPinned size={20} /></span>
+          <span>
+            <strong className="block text-[17px]">SmartVill</strong>
+            <span className="text-[13px] text-slate-600">ระบบบริหารจัดการหมู่บ้าน</span>
+          </span>
+        </Link>
+        <div className="mt-16 max-w-[540px] xl:mt-24">
+          <h1 className="text-[40px] font-bold leading-[1.3] tracking-[-0.03em] text-slate-900">งานหมู่บ้าน<br />เป็นระบบในที่เดียว</h1>
+          <p className="mt-5 max-w-[440px] text-[16px] leading-8 text-slate-700">ดูแลทะเบียนครัวเรือน บริการประปา การเงิน กองทุน และร้านค้าชุมชน พร้อมประวัติการทำงานที่ตรวจสอบได้</p>
+          <div className="mt-10 flex gap-10 border-t border-blue-200/80 pt-6">
+            <div><p className="text-[22px] font-bold text-slate-900">1,000+</p><p className="mt-1 text-[13px] text-slate-600">ครัวเรือนที่รองรับ</p></div>
+            <div><p className="text-[22px] font-bold text-slate-900">ครบทุกงาน</p><p className="mt-1 text-[13px] text-slate-600">ตั้งแต่ทะเบียนถึงการเงิน</p></div>
+          </div>
+        </div>
+      </section>
+      <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-10 lg:px-12">
+        <div className="w-full max-w-[420px]">
+          <Link href="/dashboard" className="inline-flex min-h-10 items-center gap-2 text-[13px] font-medium text-slate-600 hover:text-slate-900 lg:hidden"><ArrowLeft size={16} />กลับหน้าระบบ</Link>
+          <div className="mb-10 mt-6 flex items-center gap-3 lg:hidden"><span className="flex size-10 items-center justify-center rounded-[13px] bg-[var(--primary)] text-white"><MapPinned size={20} /></span><div><p className="text-[16px] font-bold">SmartVill</p><p className="text-[13px] text-slate-600">ระบบบริหารจัดการหมู่บ้าน</p></div></div>
+          <div className="mb-5 flex size-12 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><LockKeyhole size={21} /></div>
+          <h2 className="text-[30px] font-bold tracking-[-0.03em] text-slate-900">เข้าสู่ระบบ</h2>
+          <p className="mt-2 text-[15px] leading-7 text-slate-600">ใช้บัญชีเจ้าหน้าที่เพื่อจัดการข้อมูลหมู่บ้าน</p>
+          {demo && <div className="mt-6 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3.5 text-[14px] leading-6 text-sky-900">ยังไม่ได้ตั้งค่า Supabase<br />เข้าใช้งานหน้าจอตัวอย่างได้โดยไม่ต้องเข้าสู่ระบบ</div>}
+          {state.message && <p role={state.ok ? "status" : "alert"} className={`mt-5 rounded-lg px-4 py-3 text-[14px] leading-6 ${state.ok ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-700"}`}>{state.message}</p>}
+          <form action={action} className="mt-8 space-y-5">
+            <label className="block space-y-2"><span className="text-[14px] font-semibold text-slate-800">ชื่อผู้ใช้หรืออีเมล</span><input name="login" type="text" autoComplete="username" required className="h-12 w-full rounded-lg border border-[var(--border)] px-4 text-[15px] outline-none transition focus:border-blue-400 focus:ring-3 focus:ring-blue-100" placeholder="กรอกชื่อผู้ใช้หรืออีเมล" /></label>
+            <label className="block space-y-2"><span className="text-[14px] font-semibold text-slate-800">รหัสผ่าน</span><input name="password" type="password" autoComplete="current-password" required className="h-12 w-full rounded-lg border border-[var(--border)] px-4 text-[15px] outline-none transition focus:border-blue-400 focus:ring-3 focus:ring-blue-100" placeholder="กรอกรหัสผ่าน" /></label>
+            <div className="flex justify-end"><Link href="/forgot-password" className="inline-flex min-h-10 items-center text-[13px] font-medium text-[#0075d1] underline-offset-4 hover:underline">ลืมรหัสผ่าน?</Link></div>
+            <button disabled={pending || demo} type="submit" className="h-12 w-full rounded-lg bg-[var(--primary)] text-[15px] font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:bg-slate-300">{pending ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}</button>
+          </form>
+          {demo && <Link href="/dashboard" className="mt-3 flex min-h-11 w-full items-center justify-center rounded-lg border border-[var(--border)] text-[14px] font-semibold text-slate-700 hover:bg-slate-50">เปิดโหมดสาธิต</Link>}
+          <p className="mt-8 text-center text-[13px] leading-6 text-slate-600">เฉพาะเจ้าหน้าที่ที่ได้รับคำเชิญจากผู้ดูแลระบบ<br />การใช้งานถูกบันทึกเพื่อตรวจสอบความปลอดภัย</p>
+        </div>
+      </section>
+    </main>
+  );
 }

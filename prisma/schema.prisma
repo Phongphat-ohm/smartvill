@@ -19,10 +19,10 @@ enum OccupancyStatus {
 }
 
 enum ResidencyStatus {
-  RESIDENT @map("resident")
-  MOVED_IN @map("moved_in")
+  RESIDENT  @map("resident")
+  MOVED_IN  @map("moved_in")
   MOVED_OUT @map("moved_out")
-  DECEASED @map("deceased")
+  DECEASED  @map("deceased")
 }
 
 enum TariffMode {
@@ -70,18 +70,18 @@ enum ApprovalStatus {
 }
 
 enum LoanStatus {
-  APPLIED           @map("applied")
-  PENDING_APPROVAL  @map("pending_approval")
-  APPROVED          @map("approved")
-  ACTIVE            @map("active")
-  OVERDUE           @map("overdue")
-  PAID              @map("paid")
-  REJECTED          @map("rejected")
-  VOID              @map("void")
+  APPLIED          @map("applied")
+  PENDING_APPROVAL @map("pending_approval")
+  APPROVED         @map("approved")
+  ACTIVE           @map("active")
+  OVERDUE          @map("overdue")
+  PAID             @map("paid")
+  REJECTED         @map("rejected")
+  VOID             @map("void")
 }
 
 enum InterestMethod {
-  FLAT             @map("flat")
+  FLAT              @map("flat")
   DECLINING_BALANCE @map("declining_balance")
 }
 
@@ -92,18 +92,18 @@ enum ProductStatus {
 }
 
 enum SaleStatus {
-  COMPLETED   @map("completed")
+  COMPLETED    @map("completed")
   VOID_PENDING @map("void_pending")
-  VOIDED      @map("voided")
-  REFUNDED    @map("refunded")
+  VOIDED       @map("voided")
+  REFUNDED     @map("refunded")
 }
 
 model Role {
-  id          String             @id @db.VarChar(64)
-  name        String             @db.VarChar(100)
-  description String?            @db.VarChar(255)
-  isSystem    Boolean            @default(false) @map("is_system")
-  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          String            @id @db.VarChar(64)
+  name        String            @db.VarChar(100)
+  description String?           @db.VarChar(255)
+  isSystem    Boolean           @default(false) @map("is_system")
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   profiles    Profile[]
   permissions RolePermission[]
   invitations StaffInvitation[]
@@ -120,31 +120,32 @@ model Permission {
 }
 
 model RolePermission {
-  roleId       String     @map("role_id") @db.VarChar(64)
-  permissionKey String    @map("permission_key") @db.VarChar(100)
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+  roleId        String     @map("role_id") @db.VarChar(64)
+  permissionKey String     @map("permission_key") @db.VarChar(100)
+  role          Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
 
   @@id([roleId, permissionKey])
   @@map("role_permissions")
 }
 
 model Profile {
-  id             String            @id @db.Uuid
-  username       String            @unique @db.VarChar(32)
-  email          String            @unique @db.VarChar(255)
-  displayName    String            @map("display_name") @db.VarChar(160)
-  roleId         String            @map("role_id") @db.VarChar(64)
-  isActive       Boolean           @default(true) @map("is_active")
-  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  role           Role              @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  createdInvites StaffInvitation[] @relation("InviteCreator")
-  approvedFund   FundTransaction[] @relation("FundApprover")
-  createdFund    FundTransaction[] @relation("FundCreator")
-  payments       WaterPayment[]    @relation("PaymentRecorder")
-  sales          Sale[]
-  auditEvents    AuditLog[]        @relation("AuditActor")
+  id                  String                 @id @db.Uuid
+  username            String                 @unique @db.VarChar(32)
+  email               String                 @unique @db.VarChar(255)
+  displayName         String                 @map("display_name") @db.VarChar(160)
+  roleId              String                 @map("role_id") @db.VarChar(64)
+  isActive            Boolean                @default(true) @map("is_active")
+  createdAt           DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  role                Role                   @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  createdInvites      StaffInvitation[]      @relation("InviteCreator")
+  approvedFund        FundTransaction[]      @relation("FundApprover")
+  createdFund         FundTransaction[]      @relation("FundCreator")
+  payments            WaterPayment[]         @relation("PaymentRecorder")
+  sales               Sale[]
+  auditEvents         AuditLog[]             @relation("AuditActor")
+  recordedHeadChanges HouseholdHeadHistory[] @relation("HeadChangeActor")
 
   @@map("profiles")
 }
@@ -175,9 +176,9 @@ model BootstrapAdminToken {
 }
 
 model LoginRateLimit {
-  bucketKey  String   @id @map("bucket_key") @db.Char(64)
+  bucketKey   String   @id @map("bucket_key") @db.Char(64)
   windowStart DateTime @map("window_start") @db.Timestamptz(6)
-  attempts   Int      @default(0)
+  attempts    Int      @default(0)
 
   @@map("login_rate_limits")
 }
@@ -197,20 +198,21 @@ model VillageSettings {
 }
 
 model Household {
-  id              String            @id @default(uuid()) @db.Uuid
-  houseNumber     String            @map("house_number") @db.VarChar(40)
-  moo             String            @db.VarChar(40)
-  road            String?           @db.VarChar(120)
-  subdistrict     String            @db.VarChar(100)
-  district        String            @db.VarChar(100)
-  province        String            @db.VarChar(100)
-  postalCode      String            @map("postal_code") @db.VarChar(5)
-  householdType   HouseholdType     @default(RESIDENTIAL) @map("household_type")
-  occupancyStatus OccupancyStatus   @default(OCCUPIED) @map("occupancy_status")
-  note            String?           @db.Text
-  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id              String                 @id @default(uuid()) @db.Uuid
+  houseNumber     String                 @map("house_number") @db.VarChar(40)
+  moo             String                 @db.VarChar(40)
+  road            String?                @db.VarChar(120)
+  subdistrict     String                 @db.VarChar(100)
+  district        String                 @db.VarChar(100)
+  province        String                 @db.VarChar(100)
+  postalCode      String                 @map("postal_code") @db.VarChar(5)
+  householdType   HouseholdType          @default(RESIDENTIAL) @map("household_type")
+  occupancyStatus OccupancyStatus        @default(OCCUPIED) @map("occupancy_status")
+  note            String?                @db.Text
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   memberships     HouseholdMembership[]
+  headHistory     HouseholdHeadHistory[]
   connections     WaterConnection[]
 
   @@unique([houseNumber, moo])
@@ -220,19 +222,22 @@ model Household {
 }
 
 model Resident {
-  id                    String                @id @default(uuid()) @db.Uuid
-  firstName             String                @map("first_name") @db.VarChar(100)
-  lastName              String                @map("last_name") @db.VarChar(100)
-  nationalIdCiphertext  String?               @map("national_id_ciphertext") @db.Text
-  nationalIdLookupHash  String?               @unique @map("national_id_lookup_hash") @db.Char(64)
-  birthDate             DateTime?             @map("birth_date") @db.Date
-  phone                 String?               @db.VarChar(30)
-  residencyStatus       ResidencyStatus       @default(RESIDENT) @map("residency_status")
-  createdAt             DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  memberships           HouseholdMembership[]
-  fundMemberships       FundMember[]
-  loanGuarantees        LoanGuarantor[]
+  id                   String                 @id @default(uuid()) @db.Uuid
+  firstName            String                 @map("first_name") @db.VarChar(100)
+  lastName             String                 @map("last_name") @db.VarChar(100)
+  nationalIdCiphertext String?                @map("national_id_ciphertext") @db.Text
+  nationalIdLookupHash String?                @unique @map("national_id_lookup_hash") @db.Char(64)
+  birthDate            DateTime?              @map("birth_date") @db.Date
+  phone                String?                @db.VarChar(30)
+  residencyStatus      ResidencyStatus        @default(RESIDENT) @map("residency_status")
+  deceasedAt           DateTime?              @map("deceased_at") @db.Date
+  deathReason          String?                @map("death_reason") @db.VarChar(255)
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  memberships          HouseholdMembership[]
+  fundMemberships      FundMember[]
+  loanGuarantees       LoanGuarantor[]
+  headHistory          HouseholdHeadHistory[]
 
   @@index([lastName, firstName])
   @@index([residencyStatus])
@@ -240,50 +245,69 @@ model Resident {
 }
 
 model HouseholdMembership {
-  id            String    @id @default(uuid()) @db.Uuid
-  householdId   String    @map("household_id") @db.Uuid
-  residentId    String    @map("resident_id") @db.Uuid
-  relationship  String    @db.VarChar(80)
-  isHead         Boolean   @default(false) @map("is_head")
-  moveInAt      DateTime  @map("move_in_at") @db.Date
-  moveOutAt     DateTime? @map("move_out_at") @db.Date
-  moveReason    String?   @map("move_reason") @db.VarChar(255)
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  household     Household @relation(fields: [householdId], references: [id], onDelete: Restrict)
-  resident      Resident  @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  id           String    @id @default(uuid()) @db.Uuid
+  householdId  String    @map("household_id") @db.Uuid
+  residentId   String    @map("resident_id") @db.Uuid
+  relationship String    @db.VarChar(80)
+  isHead       Boolean   @default(false) @map("is_head")
+  moveInAt     DateTime  @map("move_in_at") @db.Date
+  moveOutAt    DateTime? @map("move_out_at") @db.Date
+  moveReason   String?   @map("move_reason") @db.VarChar(255)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  household    Household @relation(fields: [householdId], references: [id], onDelete: Restrict)
+  resident     Resident  @relation(fields: [residentId], references: [id], onDelete: Restrict)
 
   @@index([householdId, moveOutAt])
   @@index([residentId, moveOutAt])
   @@map("household_memberships")
 }
 
+model HouseholdHeadHistory {
+  id          String    @id @default(uuid()) @db.Uuid
+  householdId String    @map("household_id") @db.Uuid
+  residentId  String    @map("resident_id") @db.Uuid
+  startedAt   DateTime  @map("started_at") @db.Date
+  endedAt     DateTime? @map("ended_at") @db.Date
+  reason      String    @db.VarChar(255)
+  changedBy   String?   @map("changed_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Restrict)
+  resident    Resident  @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  actor       Profile?  @relation("HeadChangeActor", fields: [changedBy], references: [id], onDelete: SetNull)
+
+  @@index([householdId, startedAt(sort: Desc)])
+  @@index([residentId, startedAt(sort: Desc)])
+  @@index([changedBy, createdAt(sort: Desc)])
+  @@map("household_head_history")
+}
+
 model WaterConnection {
-  id             String       @id @default(uuid()) @db.Uuid
-  accountNumber  String       @unique @map("account_number") @db.VarChar(40)
-  householdId    String       @map("household_id") @db.Uuid
-  accountName    String       @map("account_name") @db.VarChar(160)
-  status         String       @default("ACTIVE") @db.VarChar(20)
-  startedAt      DateTime     @default(now()) @map("started_at") @db.Date
-  closedAt       DateTime?    @map("closed_at") @db.Date
-  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  household      Household    @relation(fields: [householdId], references: [id], onDelete: Restrict)
-  meters         WaterMeter[]
-  invoices       WaterInvoice[]
+  id            String         @id @default(uuid()) @db.Uuid
+  accountNumber String         @unique @map("account_number") @db.VarChar(40)
+  householdId   String         @map("household_id") @db.Uuid
+  accountName   String         @map("account_name") @db.VarChar(160)
+  status        String         @default("ACTIVE") @db.VarChar(20)
+  startedAt     DateTime       @default(now()) @map("started_at") @db.Date
+  closedAt      DateTime?      @map("closed_at") @db.Date
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  household     Household      @relation(fields: [householdId], references: [id], onDelete: Restrict)
+  meters        WaterMeter[]
+  invoices      WaterInvoice[]
 
   @@index([householdId, status])
   @@map("water_connections")
 }
 
 model WaterMeter {
-  id            String         @id @default(uuid()) @db.Uuid
-  connectionId  String         @map("connection_id") @db.Uuid
-  serialNumber  String?        @unique @map("serial_number") @db.VarChar(80)
-  sizeMm        Int            @map("size_mm")
-  installedAt   DateTime       @map("installed_at") @db.Date
-  removedAt     DateTime?      @map("removed_at") @db.Date
-  startReading  Decimal        @default(0) @map("start_reading") @db.Decimal(12, 3)
-  connection    WaterConnection @relation(fields: [connectionId], references: [id], onDelete: Restrict)
-  readings      MeterReading[]
+  id           String          @id @default(uuid()) @db.Uuid
+  connectionId String          @map("connection_id") @db.Uuid
+  serialNumber String?         @unique @map("serial_number") @db.VarChar(80)
+  sizeMm       Int             @map("size_mm")
+  installedAt  DateTime        @map("installed_at") @db.Date
+  removedAt    DateTime?       @map("removed_at") @db.Date
+  startReading Decimal         @default(0) @map("start_reading") @db.Decimal(12, 3)
+  connection   WaterConnection @relation(fields: [connectionId], references: [id], onDelete: Restrict)
+  readings     MeterReading[]
 
   @@index([connectionId, removedAt])
   @@map("water_meters")
@@ -294,9 +318,9 @@ model MeterReading {
   meterId      String        @map("meter_id") @db.Uuid
   readingDate  DateTime      @map("reading_date") @db.Date
   readingValue Decimal       @map("reading_value") @db.Decimal(12, 3)
-  usage         Decimal?     @db.Decimal(12, 3)
-  status        ReadingStatus @default(RECORDED)
-  note          String?      @db.Text
+  usage        Decimal?      @db.Decimal(12, 3)
+  status       ReadingStatus @default(RECORDED)
+  note         String?       @db.Text
   recordedBy   String        @map("recorded_by") @db.Uuid
   reviewedBy   String?       @map("reviewed_by") @db.Uuid
   reviewedAt   DateTime?     @map("reviewed_at") @db.Timestamptz(6)
@@ -311,17 +335,17 @@ model MeterReading {
 }
 
 model TariffPlan {
-  id                    String         @id @default(uuid()) @db.Uuid
-  name                  String         @db.VarChar(120)
-  meterSizeMm           Int            @map("meter_size_mm")
+  id                    String       @id @default(uuid()) @db.Uuid
+  name                  String       @db.VarChar(120)
+  meterSizeMm           Int          @map("meter_size_mm")
   mode                  TariffMode
-  flatRatePerCubicMeter Decimal?       @map("flat_rate_per_cubic_meter") @db.Decimal(12, 4)
-  serviceFee            Decimal        @default(0) @map("service_fee") @db.Decimal(12, 2)
-  dueDays               Int            @default(15) @map("due_days")
-  effectiveFrom         DateTime       @map("effective_from") @db.Date
-  effectiveUntil        DateTime?      @map("effective_until") @db.Date
-  isActive              Boolean        @default(true) @map("is_active")
-  createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  flatRatePerCubicMeter Decimal?     @map("flat_rate_per_cubic_meter") @db.Decimal(12, 4)
+  serviceFee            Decimal      @default(0) @map("service_fee") @db.Decimal(12, 2)
+  dueDays               Int          @default(15) @map("due_days")
+  effectiveFrom         DateTime     @map("effective_from") @db.Date
+  effectiveUntil        DateTime?    @map("effective_until") @db.Date
+  isActive              Boolean      @default(true) @map("is_active")
+  createdAt             DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   tiers                 TariffTier[]
 
   @@index([meterSizeMm, effectiveFrom, effectiveUntil])
@@ -329,34 +353,34 @@ model TariffPlan {
 }
 
 model TariffTier {
-  id                    String     @id @default(uuid()) @db.Uuid
-  tariffPlanId          String     @map("tariff_plan_id") @db.Uuid
-  upToCubicMeters       Decimal?   @map("up_to_cubic_meters") @db.Decimal(12, 3)
-  ratePerCubicMeter     Decimal    @map("rate_per_cubic_meter") @db.Decimal(12, 4)
-  sortOrder             Int        @default(0) @map("sort_order")
-  tariffPlan            TariffPlan @relation(fields: [tariffPlanId], references: [id], onDelete: Cascade)
+  id                String     @id @default(uuid()) @db.Uuid
+  tariffPlanId      String     @map("tariff_plan_id") @db.Uuid
+  upToCubicMeters   Decimal?   @map("up_to_cubic_meters") @db.Decimal(12, 3)
+  ratePerCubicMeter Decimal    @map("rate_per_cubic_meter") @db.Decimal(12, 4)
+  sortOrder         Int        @default(0) @map("sort_order")
+  tariffPlan        TariffPlan @relation(fields: [tariffPlanId], references: [id], onDelete: Cascade)
 
   @@unique([tariffPlanId, sortOrder])
   @@map("tariff_tiers")
 }
 
 model WaterInvoice {
-  id             String          @id @default(uuid()) @db.Uuid
-  invoiceNumber  String          @unique @map("invoice_number") @db.VarChar(40)
-  connectionId   String          @map("connection_id") @db.Uuid
-  meterReadingId String          @unique @map("meter_reading_id") @db.Uuid
-  periodStart    DateTime        @map("period_start") @db.Date
-  periodEnd      DateTime        @map("period_end") @db.Date
-  dueDate        DateTime        @map("due_date") @db.Date
-  usage          Decimal         @db.Decimal(12, 3)
-  serviceFee     Decimal         @default(0) @map("service_fee") @db.Decimal(12, 2)
-  totalAmount    Decimal         @map("total_amount") @db.Decimal(14, 2)
-  paidAmount     Decimal         @default(0) @map("paid_amount") @db.Decimal(14, 2)
-  status         InvoiceStatus   @default(OPEN)
-  tariffSnapshot Json            @map("tariff_snapshot")
-  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  connection     WaterConnection @relation(fields: [connectionId], references: [id], onDelete: Restrict)
-  reading        MeterReading    @relation(fields: [meterReadingId], references: [id], onDelete: Restrict)
+  id             String             @id @default(uuid()) @db.Uuid
+  invoiceNumber  String             @unique @map("invoice_number") @db.VarChar(40)
+  connectionId   String             @map("connection_id") @db.Uuid
+  meterReadingId String             @unique @map("meter_reading_id") @db.Uuid
+  periodStart    DateTime           @map("period_start") @db.Date
+  periodEnd      DateTime           @map("period_end") @db.Date
+  dueDate        DateTime           @map("due_date") @db.Date
+  usage          Decimal            @db.Decimal(12, 3)
+  serviceFee     Decimal            @default(0) @map("service_fee") @db.Decimal(12, 2)
+  totalAmount    Decimal            @map("total_amount") @db.Decimal(14, 2)
+  paidAmount     Decimal            @default(0) @map("paid_amount") @db.Decimal(14, 2)
+  status         InvoiceStatus      @default(OPEN)
+  tariffSnapshot Json               @map("tariff_snapshot")
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  connection     WaterConnection    @relation(fields: [connectionId], references: [id], onDelete: Restrict)
+  reading        MeterReading       @relation(fields: [meterReadingId], references: [id], onDelete: Restrict)
   lines          WaterInvoiceLine[]
   payments       WaterPayment[]
 
@@ -378,17 +402,17 @@ model WaterInvoiceLine {
 }
 
 model WaterPayment {
-  id            String       @id @default(uuid()) @db.Uuid
-  invoiceId     String       @map("invoice_id") @db.Uuid
-  receiptNumber String       @unique @map("receipt_number") @db.VarChar(40)
-  amount        Decimal      @db.Decimal(14, 2)
-  method        PaymentMethod
-  reference     String?      @db.VarChar(120)
-  receivedBy    String       @map("received_by") @db.Uuid
-  receivedAt    DateTime     @default(now()) @map("received_at") @db.Timestamptz(6)
-  idempotencyKey String?     @unique @map("idempotency_key") @db.VarChar(100)
-  invoice       WaterInvoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-  recorder      Profile      @relation("PaymentRecorder", fields: [receivedBy], references: [id], onDelete: Restrict)
+  id             String        @id @default(uuid()) @db.Uuid
+  invoiceId      String        @map("invoice_id") @db.Uuid
+  receiptNumber  String        @unique @map("receipt_number") @db.VarChar(40)
+  amount         Decimal       @db.Decimal(14, 2)
+  method         PaymentMethod
+  reference      String?       @db.VarChar(120)
+  receivedBy     String        @map("received_by") @db.Uuid
+  receivedAt     DateTime      @default(now()) @map("received_at") @db.Timestamptz(6)
+  idempotencyKey String?       @unique @map("idempotency_key") @db.VarChar(100)
+  invoice        WaterInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  recorder       Profile       @relation("PaymentRecorder", fields: [receivedBy], references: [id], onDelete: Restrict)
 
   @@index([invoiceId, receivedAt])
   @@map("water_payments")
@@ -404,14 +428,14 @@ model NumberSequence {
 }
 
 model Fund {
-  id          String        @id @default(uuid()) @db.Uuid
-  code        String        @unique @db.VarChar(24)
-  name        String        @db.VarChar(160)
-  description String?       @db.Text
-  isActive    Boolean       @default(true) @map("is_active")
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  accounts    FundAccount[]
-  members     FundMember[]
+  id           String            @id @default(uuid()) @db.Uuid
+  code         String            @unique @db.VarChar(24)
+  name         String            @db.VarChar(160)
+  description  String?           @db.Text
+  isActive     Boolean           @default(true) @map("is_active")
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  accounts     FundAccount[]
+  members      FundMember[]
   loanProducts LoanProduct[]
   transactions FundTransaction[]
 
@@ -419,30 +443,30 @@ model Fund {
 }
 
 model FundAccount {
-  id          String            @id @default(uuid()) @db.Uuid
-  fundId      String            @map("fund_id") @db.Uuid
-  name        String            @db.VarChar(120)
-  accountType String            @map("account_type") @db.VarChar(30)
-  openingBalance Decimal        @default(0) @map("opening_balance") @db.Decimal(14, 2)
-  isActive    Boolean           @default(true) @map("is_active")
-  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  fund        Fund              @relation(fields: [fundId], references: [id], onDelete: Restrict)
-  transactions FundTransaction[]
+  id             String            @id @default(uuid()) @db.Uuid
+  fundId         String            @map("fund_id") @db.Uuid
+  name           String            @db.VarChar(120)
+  accountType    String            @map("account_type") @db.VarChar(30)
+  openingBalance Decimal           @default(0) @map("opening_balance") @db.Decimal(14, 2)
+  isActive       Boolean           @default(true) @map("is_active")
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  fund           Fund              @relation(fields: [fundId], references: [id], onDelete: Restrict)
+  transactions   FundTransaction[]
 
   @@unique([fundId, name])
   @@map("fund_accounts")
 }
 
 model FundMember {
-  id         String             @id @default(uuid()) @db.Uuid
-  fundId     String             @map("fund_id") @db.Uuid
-  residentId String             @map("resident_id") @db.Uuid
-  memberNo   String             @map("member_no") @db.VarChar(40)
-  joinedAt   DateTime           @default(now()) @map("joined_at") @db.Date
-  status     String             @default("ACTIVE") @db.VarChar(20)
-  fund       Fund               @relation(fields: [fundId], references: [id], onDelete: Restrict)
-  resident   Resident           @relation(fields: [residentId], references: [id], onDelete: Restrict)
-  loans      Loan[]
+  id           String            @id @default(uuid()) @db.Uuid
+  fundId       String            @map("fund_id") @db.Uuid
+  residentId   String            @map("resident_id") @db.Uuid
+  memberNo     String            @map("member_no") @db.VarChar(40)
+  joinedAt     DateTime          @default(now()) @map("joined_at") @db.Date
+  status       String            @default("ACTIVE") @db.VarChar(20)
+  fund         Fund              @relation(fields: [fundId], references: [id], onDelete: Restrict)
+  resident     Resident          @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  loans        Loan[]
   transactions FundTransaction[]
 
   @@unique([fundId, memberNo])
@@ -451,25 +475,25 @@ model FundMember {
 }
 
 model FundTransaction {
-  id           String               @id @default(uuid()) @db.Uuid
+  id            String              @id @default(uuid()) @db.Uuid
   transactionNo String              @unique @map("transaction_no") @db.VarChar(40)
-  fundId       String               @map("fund_id") @db.Uuid
-  accountId    String               @map("account_id") @db.Uuid
-  memberId     String?              @map("member_id") @db.Uuid
-  type         FundTransactionType
-  amount       Decimal              @db.Decimal(14, 2)
-  description  String               @db.VarChar(255)
-  status       ApprovalStatus       @default(PENDING)
-  createdBy    String               @map("created_by") @db.Uuid
-  approvedBy   String?              @map("approved_by") @db.Uuid
-  approvedAt   DateTime?            @map("approved_at") @db.Timestamptz(6)
-  reason       String?              @db.Text
-  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
-  fund         Fund                 @relation(fields: [fundId], references: [id], onDelete: Restrict)
-  account      FundAccount          @relation(fields: [accountId], references: [id], onDelete: Restrict)
-  member       FundMember?          @relation(fields: [memberId], references: [id], onDelete: Restrict)
-  creator      Profile              @relation("FundCreator", fields: [createdBy], references: [id], onDelete: Restrict)
-  approver     Profile?             @relation("FundApprover", fields: [approvedBy], references: [id], onDelete: Restrict)
+  fundId        String              @map("fund_id") @db.Uuid
+  accountId     String              @map("account_id") @db.Uuid
+  memberId      String?             @map("member_id") @db.Uuid
+  type          FundTransactionType
+  amount        Decimal             @db.Decimal(14, 2)
+  description   String              @db.VarChar(255)
+  status        ApprovalStatus      @default(PENDING)
+  createdBy     String              @map("created_by") @db.Uuid
+  approvedBy    String?             @map("approved_by") @db.Uuid
+  approvedAt    DateTime?           @map("approved_at") @db.Timestamptz(6)
+  reason        String?             @db.Text
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  fund          Fund                @relation(fields: [fundId], references: [id], onDelete: Restrict)
+  account       FundAccount         @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  member        FundMember?         @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  creator       Profile             @relation("FundCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  approver      Profile?            @relation("FundApprover", fields: [approvedBy], references: [id], onDelete: Restrict)
 
   @@index([fundId, createdAt(sort: Desc)])
   @@index([status, createdAt])
@@ -477,43 +501,43 @@ model FundTransaction {
 }
 
 model LoanProduct {
-  id                    String         @id @default(uuid()) @db.Uuid
-  fundId                String         @map("fund_id") @db.Uuid
-  name                  String         @db.VarChar(160)
-  minPrincipal          Decimal        @map("min_principal") @db.Decimal(14, 2)
-  maxPrincipal          Decimal        @map("max_principal") @db.Decimal(14, 2)
-  annualRatePercent     Decimal        @map("annual_rate_percent") @db.Decimal(7, 4)
-  interestMethod        InterestMethod @map("interest_method")
-  maxTermMonths         Int            @map("max_term_months")
-  dueDay                Int            @default(5) @map("due_day")
-  gracePeriodDays       Int            @default(0) @map("grace_period_days")
-  lateFeePercent        Decimal        @default(0) @map("late_fee_percent") @db.Decimal(7, 4)
-  minGuarantors         Int            @default(0) @map("min_guarantors")
-  maxGuarantors         Int            @default(2) @map("max_guarantors")
-  isActive              Boolean        @default(true) @map("is_active")
-  fund                  Fund           @relation(fields: [fundId], references: [id], onDelete: Restrict)
-  loans                 Loan[]
+  id                String         @id @default(uuid()) @db.Uuid
+  fundId            String         @map("fund_id") @db.Uuid
+  name              String         @db.VarChar(160)
+  minPrincipal      Decimal        @map("min_principal") @db.Decimal(14, 2)
+  maxPrincipal      Decimal        @map("max_principal") @db.Decimal(14, 2)
+  annualRatePercent Decimal        @map("annual_rate_percent") @db.Decimal(7, 4)
+  interestMethod    InterestMethod @map("interest_method")
+  maxTermMonths     Int            @map("max_term_months")
+  dueDay            Int            @default(5) @map("due_day")
+  gracePeriodDays   Int            @default(0) @map("grace_period_days")
+  lateFeePercent    Decimal        @default(0) @map("late_fee_percent") @db.Decimal(7, 4)
+  minGuarantors     Int            @default(0) @map("min_guarantors")
+  maxGuarantors     Int            @default(2) @map("max_guarantors")
+  isActive          Boolean        @default(true) @map("is_active")
+  fund              Fund           @relation(fields: [fundId], references: [id], onDelete: Restrict)
+  loans             Loan[]
 
   @@map("loan_products")
 }
 
 model Loan {
-  id             String             @id @default(uuid()) @db.Uuid
-  contractNo     String             @unique @map("contract_no") @db.VarChar(40)
-  productId      String             @map("product_id") @db.Uuid
-  borrowerId     String             @map("borrower_id") @db.Uuid
-  principal      Decimal            @db.Decimal(14, 2)
-  annualRate     Decimal            @map("annual_rate") @db.Decimal(7, 4)
-  interestMethod InterestMethod     @map("interest_method")
-  termMonths     Int                @map("term_months")
-  status         LoanStatus         @default(APPLIED)
-  appliedAt      DateTime           @default(now()) @map("applied_at") @db.Timestamptz(6)
-  approvedBy     String?            @map("approved_by") @db.Uuid
-  approvedAt     DateTime?          @map("approved_at") @db.Timestamptz(6)
-  issuedAt       DateTime?          @map("issued_at") @db.Timestamptz(6)
-  closedAt       DateTime?          @map("closed_at") @db.Timestamptz(6)
-  product        LoanProduct        @relation(fields: [productId], references: [id], onDelete: Restrict)
-  borrower       FundMember         @relation(fields: [borrowerId], references: [id], onDelete: Restrict)
+  id             String            @id @default(uuid()) @db.Uuid
+  contractNo     String            @unique @map("contract_no") @db.VarChar(40)
+  productId      String            @map("product_id") @db.Uuid
+  borrowerId     String            @map("borrower_id") @db.Uuid
+  principal      Decimal           @db.Decimal(14, 2)
+  annualRate     Decimal           @map("annual_rate") @db.Decimal(7, 4)
+  interestMethod InterestMethod    @map("interest_method")
+  termMonths     Int               @map("term_months")
+  status         LoanStatus        @default(APPLIED)
+  appliedAt      DateTime          @default(now()) @map("applied_at") @db.Timestamptz(6)
+  approvedBy     String?           @map("approved_by") @db.Uuid
+  approvedAt     DateTime?         @map("approved_at") @db.Timestamptz(6)
+  issuedAt       DateTime?         @map("issued_at") @db.Timestamptz(6)
+  closedAt       DateTime?         @map("closed_at") @db.Timestamptz(6)
+  product        LoanProduct       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  borrower       FundMember        @relation(fields: [borrowerId], references: [id], onDelete: Restrict)
   guarantors     LoanGuarantor[]
   installments   LoanInstallment[]
   payments       LoanPayment[]
@@ -523,28 +547,28 @@ model Loan {
 }
 
 model LoanGuarantor {
-  loanId     String   @map("loan_id") @db.Uuid
-  residentId String   @map("resident_id") @db.Uuid
+  loanId     String    @map("loan_id") @db.Uuid
+  residentId String    @map("resident_id") @db.Uuid
   signedAt   DateTime? @map("signed_at") @db.Timestamptz(6)
-  loan       Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
-  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  loan       Loan      @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  resident   Resident  @relation(fields: [residentId], references: [id], onDelete: Restrict)
 
   @@id([loanId, residentId])
   @@map("loan_guarantors")
 }
 
 model LoanInstallment {
-  id                 String        @id @default(uuid()) @db.Uuid
-  loanId             String        @map("loan_id") @db.Uuid
-  installmentNo      Int            @map("installment_no")
-  dueDate            DateTime       @map("due_date") @db.Date
-  principalDue       Decimal        @map("principal_due") @db.Decimal(14, 2)
-  interestDue        Decimal        @map("interest_due") @db.Decimal(14, 2)
-  penaltyDue         Decimal        @default(0) @map("penalty_due") @db.Decimal(14, 2)
-  paidAmount         Decimal        @default(0) @map("paid_amount") @db.Decimal(14, 2)
-  status             String         @default("OPEN") @db.VarChar(20)
-  loan               Loan           @relation(fields: [loanId], references: [id], onDelete: Restrict)
-  payments           LoanPayment[]
+  id            String        @id @default(uuid()) @db.Uuid
+  loanId        String        @map("loan_id") @db.Uuid
+  installmentNo Int           @map("installment_no")
+  dueDate       DateTime      @map("due_date") @db.Date
+  principalDue  Decimal       @map("principal_due") @db.Decimal(14, 2)
+  interestDue   Decimal       @map("interest_due") @db.Decimal(14, 2)
+  penaltyDue    Decimal       @default(0) @map("penalty_due") @db.Decimal(14, 2)
+  paidAmount    Decimal       @default(0) @map("paid_amount") @db.Decimal(14, 2)
+  status        String        @default("OPEN") @db.VarChar(20)
+  loan          Loan          @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  payments      LoanPayment[]
 
   @@unique([loanId, installmentNo])
   @@index([dueDate, status])
@@ -552,19 +576,19 @@ model LoanInstallment {
 }
 
 model LoanPayment {
-  id              String          @id @default(uuid()) @db.Uuid
-  loanId          String          @map("loan_id") @db.Uuid
-  installmentId   String?         @map("installment_id") @db.Uuid
-  receiptNumber   String          @unique @map("receipt_number") @db.VarChar(40)
-  amount          Decimal         @db.Decimal(14, 2)
-  principalPaid   Decimal         @map("principal_paid") @db.Decimal(14, 2)
-  interestPaid    Decimal         @map("interest_paid") @db.Decimal(14, 2)
-  penaltyPaid     Decimal         @default(0) @map("penalty_paid") @db.Decimal(14, 2)
-  method          PaymentMethod
-  receivedBy      String          @map("received_by") @db.Uuid
-  receivedAt      DateTime        @default(now()) @map("received_at") @db.Timestamptz(6)
-  loan            Loan            @relation(fields: [loanId], references: [id], onDelete: Restrict)
-  installment     LoanInstallment? @relation(fields: [installmentId], references: [id], onDelete: Restrict)
+  id            String           @id @default(uuid()) @db.Uuid
+  loanId        String           @map("loan_id") @db.Uuid
+  installmentId String?          @map("installment_id") @db.Uuid
+  receiptNumber String           @unique @map("receipt_number") @db.VarChar(40)
+  amount        Decimal          @db.Decimal(14, 2)
+  principalPaid Decimal          @map("principal_paid") @db.Decimal(14, 2)
+  interestPaid  Decimal          @map("interest_paid") @db.Decimal(14, 2)
+  penaltyPaid   Decimal          @default(0) @map("penalty_paid") @db.Decimal(14, 2)
+  method        PaymentMethod
+  receivedBy    String           @map("received_by") @db.Uuid
+  receivedAt    DateTime         @default(now()) @map("received_at") @db.Timestamptz(6)
+  loan          Loan             @relation(fields: [loanId], references: [id], onDelete: Restrict)
+  installment   LoanInstallment? @relation(fields: [installmentId], references: [id], onDelete: Restrict)
 
   @@index([loanId, receivedAt])
   @@map("loan_payments")
@@ -579,21 +603,21 @@ model ProductCategory {
 }
 
 model Product {
-  id          String             @id @default(uuid()) @db.Uuid
-  barcode     String?            @unique @db.VarChar(80)
-  sku         String             @unique @db.VarChar(50)
-  name        String             @db.VarChar(160)
-  categoryId  String             @map("category_id") @db.Uuid
-  costPrice   Decimal            @default(0) @map("cost_price") @db.Decimal(14, 2)
-  salePrice   Decimal            @map("sale_price") @db.Decimal(14, 2)
-  stock       Decimal            @default(0) @db.Decimal(14, 3)
-  reorderAt   Decimal            @default(0) @map("reorder_at") @db.Decimal(14, 3)
-  status      ProductStatus      @default(ACTIVE)
-  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  category    ProductCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  movements   InventoryMovement[]
-  saleItems   SaleItem[]
+  id         String              @id @default(uuid()) @db.Uuid
+  barcode    String?             @unique @db.VarChar(80)
+  sku        String              @unique @db.VarChar(50)
+  name       String              @db.VarChar(160)
+  categoryId String              @map("category_id") @db.Uuid
+  costPrice  Decimal             @default(0) @map("cost_price") @db.Decimal(14, 2)
+  salePrice  Decimal             @map("sale_price") @db.Decimal(14, 2)
+  stock      Decimal             @default(0) @db.Decimal(14, 3)
+  reorderAt  Decimal             @default(0) @map("reorder_at") @db.Decimal(14, 3)
+  status     ProductStatus       @default(ACTIVE)
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  category   ProductCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  movements  InventoryMovement[]
+  saleItems  SaleItem[]
 
   @@index([name])
   @@index([status, stock])
@@ -601,31 +625,31 @@ model Product {
 }
 
 model InventoryMovement {
-  id          String   @id @default(uuid()) @db.Uuid
-  productId   String   @map("product_id") @db.Uuid
-  quantity    Decimal  @db.Decimal(14, 3)
-  movementType String  @map("movement_type") @db.VarChar(30)
-  reference   String?  @db.VarChar(80)
-  reason      String?  @db.Text
-  createdBy   String   @map("created_by") @db.Uuid
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  id           String   @id @default(uuid()) @db.Uuid
+  productId    String   @map("product_id") @db.Uuid
+  quantity     Decimal  @db.Decimal(14, 3)
+  movementType String   @map("movement_type") @db.VarChar(30)
+  reference    String?  @db.VarChar(80)
+  reason       String?  @db.Text
+  createdBy    String   @map("created_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([productId, createdAt(sort: Desc)])
   @@map("inventory_movements")
 }
 
 model Sale {
-  id            String       @id @default(uuid()) @db.Uuid
-  receiptNumber String       @unique @map("receipt_number") @db.VarChar(40)
-  totalAmount   Decimal      @map("total_amount") @db.Decimal(14, 2)
-  paidAmount    Decimal      @map("paid_amount") @db.Decimal(14, 2)
+  id            String        @id @default(uuid()) @db.Uuid
+  receiptNumber String        @unique @map("receipt_number") @db.VarChar(40)
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(14, 2)
+  paidAmount    Decimal       @map("paid_amount") @db.Decimal(14, 2)
   paymentMethod PaymentMethod @map("payment_method")
-  status        SaleStatus   @default(COMPLETED)
-  soldBy        String       @map("sold_by") @db.Uuid
-  soldAt        DateTime     @default(now()) @map("sold_at") @db.Timestamptz(6)
-  voidReason    String?      @map("void_reason") @db.Text
-  cashier       Profile      @relation(fields: [soldBy], references: [id], onDelete: Restrict)
+  status        SaleStatus    @default(COMPLETED)
+  soldBy        String        @map("sold_by") @db.Uuid
+  soldAt        DateTime      @default(now()) @map("sold_at") @db.Timestamptz(6)
+  voidReason    String?       @map("void_reason") @db.Text
+  cashier       Profile       @relation(fields: [soldBy], references: [id], onDelete: Restrict)
   items         SaleItem[]
 
   @@index([soldAt(sort: Desc)])
@@ -647,16 +671,16 @@ model SaleItem {
 }
 
 model AuditLog {
-  id          String   @id @default(uuid()) @db.Uuid
-  actorId     String?  @map("actor_id") @db.Uuid
-  action      String   @db.VarChar(80)
-  entityType  String   @map("entity_type") @db.VarChar(80)
-  entityId    String?  @map("entity_id") @db.VarChar(80)
-  changes     Json?
-  reason      String?  @db.Text
-  requestId   String?  @map("request_id") @db.VarChar(100)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  actor       Profile? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String   @db.VarChar(80)
+  entityType String   @map("entity_type") @db.VarChar(80)
+  entityId   String?  @map("entity_id") @db.VarChar(80)
+  changes    Json?
+  reason     String?  @db.Text
+  requestId  String?  @map("request_id") @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  actor      Profile? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([entityType, entityId, createdAt(sort: Desc)])
   @@index([actorId, createdAt(sort: Desc)])

@@ -14,6 +14,8 @@ type AutocompleteProps = {
   required?: boolean;
   autoFocus?: boolean;
   allowClear?: boolean;
+  onValueChange?: (value: string) => void;
+  searchUrl?: string;
 };
 
 export function Autocomplete({
@@ -25,6 +27,8 @@ export function Autocomplete({
   required = false,
   autoFocus = false,
   allowClear = true,
+  onValueChange,
+  searchUrl,
 }: AutocompleteProps) {
   const inputId = useId();
   const listboxId = useId();
@@ -35,13 +39,39 @@ export function Autocomplete({
   const [query, setQuery] = useState(selectedAtStart?.label ?? "");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [remoteOptions, setRemoteOptions] = useState<AutocompleteOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const availableOptions = searchUrl ? remoteOptions : options;
 
-  const selectedOption = options.find((option) => option.value === selectedValue);
+  const selectedOption = availableOptions.find((option) => option.value === selectedValue);
+  useEffect(() => {
+    if (selectedValue === defaultValue && !query && selectedAtStart) setQuery(selectedAtStart.label);
+  }, [defaultValue, query, selectedAtStart, selectedValue]);
+  useEffect(() => {
+    setSelectedValue(defaultValue);
+    setQuery("");
+  }, [defaultValue]);
   const normalizedQuery = query.trim().toLocaleLowerCase("th");
   const filteredOptions = useMemo(() => {
-    if (!normalizedQuery || query === selectedOption?.label) return options;
-    return options.filter((option) => option.label.toLocaleLowerCase("th").includes(normalizedQuery));
-  }, [normalizedQuery, options, query, selectedOption?.label]);
+    if (!normalizedQuery || query === selectedOption?.label) return availableOptions;
+    return availableOptions.filter((option) => option.label.toLocaleLowerCase("th").includes(normalizedQuery));
+  }, [availableOptions, normalizedQuery, query, selectedOption?.label]);
+
+  useEffect(() => {
+    if (!searchUrl || query === selectedOption?.label) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${searchUrl}?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal });
+        if (!response.ok) throw new Error("SEARCH_FAILED");
+        const payload = await response.json() as { options?: AutocompleteOption[] };
+        setRemoteOptions(payload.options ?? []);
+      } catch (error) { if (!(error instanceof DOMException && error.name === "AbortError")) setRemoteOptions([]); }
+      finally { setLoading(false); }
+    }, 250);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [query, searchUrl, selectedOption?.label]);
 
   useEffect(() => {
     function closeOnOutsidePointer(event: PointerEvent) {
@@ -69,6 +99,7 @@ export function Autocomplete({
 
   function choose(option: AutocompleteOption) {
     setSelectedValue(option.value);
+    onValueChange?.(option.value);
     setQuery(option.label);
     setOpen(false);
     setActiveIndex(-1);
@@ -76,6 +107,7 @@ export function Autocomplete({
 
   function clear() {
     setSelectedValue("");
+    onValueChange?.("");
     setQuery("");
     setOpen(true);
     setActiveIndex(options.length ? 0 : -1);
@@ -131,7 +163,7 @@ export function Autocomplete({
         </div>
       </div>
       {open && <div id={listboxId} role="listbox" className="absolute z-[70] mt-1.5 max-h-60 w-full overflow-y-auto rounded-xl border border-[var(--border)] bg-white p-1.5 shadow-[0_14px_36px_rgb(31_65_104_/_14%)]">
-        {filteredOptions.length ? filteredOptions.map((option, index) => {
+        {loading ? <p className="px-3 py-6 text-center text-sm text-slate-500">กำลังค้นหา...</p> : filteredOptions.length ? filteredOptions.map((option, index) => {
           const selected = option.value === selectedValue;
           const active = index === activeIndex;
           return <button key={`${option.value}-${index}`} id={`${listboxId}-${index}`} type="button" role="option" aria-selected={selected} onPointerDown={(event) => event.preventDefault()} onClick={() => choose(option)} onMouseEnter={() => setActiveIndex(index)} className={`flex min-h-10 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm ${active ? "bg-[var(--primary-soft)] text-[#0075d1]" : "text-slate-700 hover:bg-slate-50"}`}><span>{option.label}</span>{selected && <Check aria-hidden="true" size={15} className="shrink-0" />}</button>;

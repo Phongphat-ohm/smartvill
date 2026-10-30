@@ -125,11 +125,11 @@ a, button, [role="button"] {
 .text-slate-400 { color: var(--muted-foreground); }
 
 .swal2-popup.village-swal {
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 18px;
   color: var(--foreground);
   font-family: inherit;
-  box-shadow: 0 24px 70px rgb(19 42 71 / 18%);
+  box-shadow: 0 10px 30px rgb(19 42 71 / 12%);
 }
 .swal2-popup.village-swal .swal2-title { font-size: 20px; font-weight: 700; }
 .swal2-popup.village-swal .swal2-html-container { color: var(--muted-foreground); font-size: 14px; }
@@ -142,7 +142,10 @@ a, button, [role="button"] {
   border: 1px solid var(--border); border-radius: 10px; background: white;
   color: var(--foreground); font-weight: 600; box-shadow: none;
 }
-.swal2-container .swal2-toast.village-swal { border-radius: 12px; }
+.swal2-container .swal2-toast.village-swal {
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgb(19 42 71 / 10%);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

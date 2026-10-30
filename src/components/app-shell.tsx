@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { signOutAction } from "@/app/actions";
 import {
-  Activity, ChevronDown, CircleDollarSign, Droplets, House, KeyRound, LayoutDashboard,
+  Activity, ChevronDown, CircleDollarSign, ClipboardCheck, Droplets, House, KeyRound, LayoutDashboard,
   Menu, Package, ReceiptText, Settings2, ShieldCheck, ShoppingCart, Users, Wallet, X,
 } from "lucide-react";
 
@@ -14,6 +14,7 @@ const navigation = [
   { section: "ทะเบียน" },
   { label: "ครัวเรือน", href: "/households", icon: House },
   { label: "ประชากร", href: "/people", icon: Users },
+  { label: "ตรวจสอบข้อมูลทะเบียน", href: "/registry/review", icon: ClipboardCheck },
   { section: "ประปาหมู่บ้าน" },
   { label: "อ่านมิเตอร์", href: "/water/readings", icon: Droplets },
   { label: "ใบแจ้งหนี้", href: "/water/billing", icon: ReceiptText },

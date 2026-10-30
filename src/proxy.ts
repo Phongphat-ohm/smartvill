@@ -18,7 +18,24 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getClaims();
+  let invalidRefreshToken = false;
+  try {
+    const { error } = await supabase.auth.getClaims();
+    invalidRefreshToken = error?.code === "refresh_token_not_found";
+  } catch (error) {
+    const code = typeof error === "object" && error !== null && "code" in error
+      ? (error as { code?: unknown }).code
+      : undefined;
+    if (code !== "refresh_token_not_found") throw error;
+    invalidRefreshToken = true;
+  }
+
+  if (invalidRefreshToken) {
+    const staleAuthCookies = request.cookies.getAll().filter(({ name }) => /^sb-.+-auth-token(?:\.\d+)?$/.test(name));
+    staleAuthCookies.forEach(({ name }) => request.cookies.set(name, ""));
+    response = NextResponse.next({ request });
+    staleAuthCookies.forEach(({ name }) => response.cookies.set(name, "", { path: "/", maxAge: 0 }));
+  }
   return response;
 }
 

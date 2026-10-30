@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Barcode, Check, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { Barcode, Check, LoaderCircle, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import Swal from "sweetalert2";
 import { productRows as initialProducts, type DemoRow } from "@/lib/demo-data";
 import { formatCurrency } from "@/lib/format";
@@ -17,6 +17,7 @@ export function PointOfSale({ initialProducts: productsFromServer = initialProdu
   const [cart, setCart] = useState<CartLine[]>([]);
   const [query, setQuery] = useState("");
   const [method, setMethod] = useState("cash");
+  const [checkingOut, setCheckingOut] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const total = useMemo(() => cart.reduce((sum, line) => sum + Number(line.product.price) * line.quantity, 0), [cart]);
   const filteredProducts = products.filter((product) => `${product.name} ${product.barcode}`.toLowerCase().includes(query.toLowerCase()));
@@ -44,15 +45,22 @@ export function PointOfSale({ initialProducts: productsFromServer = initialProdu
   }
 
   async function checkout() {
-    if (!cart.length) return;
+    if (!cart.length || checkingOut) return;
     const result = await Swal.fire({ ...alertOptions, title: "ยืนยันการขาย", html: `รับชำระ <strong>${formatCurrency(total)}</strong> และตัดสต็อกสินค้า ${cart.length} รายการหรือไม่?`, icon: "question", showCancelButton: true, confirmButtonText: "ยืนยันการขาย", cancelButtonText: "กลับไปแก้ไข" });
     if (!result.isConfirmed) return;
     if (!isDemo) {
-      const response = await recordShopSaleAction(cart.map((line) => ({ productId: String(line.product.id), quantity: line.quantity })), method);
-      if (!response.ok) { await Swal.fire({ ...alertOptions, icon: "error", title: "ขายไม่สำเร็จ", text: response.message }); return; }
-      setCart([]);
-      router.refresh();
-      await Swal.fire({ ...alertOptions, icon: "success", title: "บันทึกการขายแล้ว", text: response.message, confirmButtonColor: "#008BF8" });
+      setCheckingOut(true);
+      try {
+        const response = await recordShopSaleAction(cart.map((line) => ({ productId: String(line.product.id), quantity: line.quantity })), method);
+        if (!response.ok) { await Swal.fire({ ...alertOptions, icon: "error", title: "ขายไม่สำเร็จ", text: response.message }); return; }
+        setCart([]);
+        router.refresh();
+        await Swal.fire({ ...alertOptions, icon: "success", title: "บันทึกการขายแล้ว", text: response.message, confirmButtonColor: "#008BF8" });
+      } catch (cause) {
+        await Swal.fire({ ...alertOptions, icon: "error", title: "ขายไม่สำเร็จ", text: cause instanceof Error ? cause.message : "กรุณาลองอีกครั้ง" });
+      } finally {
+        setCheckingOut(false);
+      }
       return;
     }
     setProducts((current) => current.map((product) => {
@@ -79,7 +87,7 @@ export function PointOfSale({ initialProducts: productsFromServer = initialProdu
         <section className="rounded-2xl border border-[var(--border)] bg-white">
           <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-4 sm:px-5"><div><h2 className="text-[14px] font-bold text-slate-900">รายการขาย</h2><p className="mt-0.5 text-[10px] text-slate-500">{cart.reduce((sum, line) => sum + line.quantity, 0)} ชิ้น</p></div><button disabled={!cart.length} onClick={() => setCart([])} className="text-[10px] font-medium text-slate-400 hover:text-rose-600 disabled:opacity-40">ล้างรายการ</button></div>
           <div className="min-h-[180px] divide-y divide-slate-100 px-4 sm:px-5">{cart.length ? cart.map((line) => <div key={String(line.product.id)} className="flex items-center gap-2 py-3"><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-semibold text-slate-800">{line.product.name}</p><p className="mt-0.5 text-[10px] text-slate-500">{formatCurrency(Number(line.product.price))} / ชิ้น</p></div><div className="flex items-center gap-1"><button aria-label="ลดจำนวน" onClick={() => updateQuantity(line.product.id, -1)} className="flex size-7 items-center justify-center rounded-md border border-[var(--border)] text-slate-500 hover:bg-slate-50"><Minus size={12} /></button><span className="w-7 text-center text-[11px] font-semibold tabular-nums">{line.quantity}</span><button aria-label="เพิ่มจำนวน" onClick={() => updateQuantity(line.product.id, 1)} className="flex size-7 items-center justify-center rounded-md border border-[var(--border)] text-slate-500 hover:bg-slate-50"><Plus size={12} /></button></div><span className="w-[76px] text-right text-[11px] font-semibold tabular-nums">{formatCurrency(Number(line.product.price) * line.quantity)}</span><button aria-label="นำสินค้าออก" onClick={() => setCart((current) => current.filter((item) => item.product.id !== line.product.id))} className="rounded p-1 text-slate-300 hover:text-rose-600"><Trash2 size={13} /></button></div>) : <div className="flex min-h-[180px] flex-col items-center justify-center text-center"><span className="flex size-10 items-center justify-center rounded-full bg-slate-50 text-slate-400"><ShoppingBag size={17} /></span><p className="mt-2 text-[11px] font-medium text-slate-600">ยังไม่มีสินค้าในรายการ</p><p className="mt-1 text-[10px] text-slate-400">สแกน barcode หรือเลือกสินค้าจากรายการ</p></div>}</div>
-          <div className="space-y-3 border-t border-[var(--border)] p-4 sm:p-5"><div className="flex items-center justify-between text-[11px] text-slate-500"><span>ยอดรวม</span><span>{formatCurrency(total)}</span></div><div className="flex items-center justify-between"><span className="text-[13px] font-bold text-slate-900">ยอดสุทธิ</span><span className="text-[22px] font-bold tracking-[-0.03em] text-slate-900">{formatCurrency(total)}</span></div><label className="block space-y-1.5"><span className="text-[10px] font-semibold text-slate-600">รับชำระโดย</span><select value={method} onChange={(event) => setMethod(event.target.value)} className="h-9 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[11px] outline-none focus:border-blue-400"><option value="cash">เงินสด</option><option value="transfer">โอนเงิน</option><option value="other">อื่น ๆ</option></select></label><button disabled={!cart.length} onClick={checkout} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] text-[12px] font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:bg-slate-300"><Check size={16} />บันทึกการขาย</button><p className="text-center text-[9px] leading-4 text-slate-400">ยอดขายจะบันทึกเป็นรายการรับเงินและตัดสต็อกเมื่อยืนยัน</p></div>
+          <div className="space-y-3 border-t border-[var(--border)] p-4 sm:p-5"><div className="flex items-center justify-between text-[11px] text-slate-500"><span>ยอดรวม</span><span>{formatCurrency(total)}</span></div><div className="flex items-center justify-between"><span className="text-[13px] font-bold text-slate-900">ยอดสุทธิ</span><span className="text-[22px] font-bold tracking-[-0.03em] text-slate-900">{formatCurrency(total)}</span></div><label className="block space-y-1.5"><span className="text-[10px] font-semibold text-slate-600">รับชำระโดย</span><select disabled={checkingOut} value={method} onChange={(event) => setMethod(event.target.value)} className="h-9 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[11px] outline-none focus:border-blue-400 disabled:opacity-60"><option value="cash">เงินสด</option><option value="transfer">โอนเงิน</option><option value="other">อื่น ๆ</option></select></label><button disabled={!cart.length || checkingOut} onClick={checkout} aria-busy={checkingOut} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] text-[12px] font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:bg-slate-300">{checkingOut ? <LoaderCircle size={16} className="animate-spin" /> : <Check size={16} />}{checkingOut ? "กำลังบันทึกการขาย..." : "บันทึกการขาย"}</button><p className="text-center text-[9px] leading-4 text-slate-400">ยอดขายจะบันทึกเป็นรายการรับเงินและตัดสต็อกเมื่อยืนยัน</p></div>
         </section>
       </div>
     </div>

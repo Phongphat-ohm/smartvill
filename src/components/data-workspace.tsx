@@ -2,15 +2,18 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable } from "@tanstack/react-table";
-import { Search, Plus, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, Filter, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Search, Plus, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, Filter, X, LoaderCircle, PencilLine, SearchX } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/format";
 import type { DemoRow } from "@/lib/demo-data";
 import { Autocomplete, type AutocompleteOption } from "@/components/ui/autocomplete";
+import { ThaiAddressFields } from "@/components/ui/thai-address-fields";
 
 export type WorkspaceColumn = { key: string; label: string; kind?: "text" | "number" | "money" | "status"; options?: string[] };
-export type FormField = { key: string; label: string; kind?: "text" | "number" | "date" | "select" | "autocomplete"; options?: Array<string | AutocompleteOption>; required?: boolean; placeholder?: string };
+export type FormField = { key: string; label: string; kind?: "text" | "number" | "date" | "select" | "autocomplete"; options?: Array<string | AutocompleteOption>; required?: boolean; placeholder?: string; remoteOptionsUrl?: string };
+export type RowActionConfig = { basePath: string; label: string; columnLabel?: string; accessibleLabelKey?: string };
+export type ServerPagination = { page: number; pageSize: number; total: number; query: string; status: string; previousCursor?: string; nextCursor?: string };
 
 type DataWorkspaceProps = {
   title: string;
@@ -23,7 +26,8 @@ type DataWorkspaceProps = {
   filters?: string[];
   onCreate?: (formData: FormData) => Promise<{ ok: boolean; message: string }>;
   readOnly?: boolean;
-  detailBasePath?: string;
+  detailAction?: RowActionConfig;
+  serverPagination?: ServerPagination;
 };
 
 async function toast(title: string) {
@@ -42,38 +46,62 @@ function StatusPill({ value }: { value: string }) {
   return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${tone}`}>{value}</span>;
 }
 
-export function DataWorkspace({ title, description, actionLabel, searchPlaceholder, columns, fields, initialRows, filters = ["ทั้งหมด", "ปกติ", "รอตรวจ", "เกินกำหนด"], onCreate, readOnly = false, detailBasePath }: DataWorkspaceProps) {
+export function DataWorkspace({ title, description, actionLabel, searchPlaceholder, columns, fields, initialRows, filters = ["ทั้งหมด", "ปกติ", "รอตรวจ", "เกินกำหนด"], onCreate, readOnly = false, detailAction, serverPagination }: DataWorkspaceProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [rows, setRows] = useState(initialRows);
   useEffect(() => setRows(initialRows), [initialRows]);
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ทั้งหมด");
+  const [query, setQuery] = useState(serverPagination?.query ?? "");
+  const [statusFilter, setStatusFilter] = useState(serverPagination?.status || "ทั้งหมด");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const dialogTitleId = useId();
   const dialogDescriptionId = useId();
 
-  const filteredRows = useMemo(() => rows.filter((row) => {
+  const filteredRows = useMemo(() => serverPagination ? rows : rows.filter((row) => {
     const matchesQuery = !query || Object.values(row).some((value) => String(value).toLowerCase().includes(query.toLowerCase()));
     const matchesStatus = statusFilter === "ทั้งหมด" || Object.values(row).some((value) => String(value) === statusFilter);
     return matchesQuery && matchesStatus;
-  }), [query, rows, statusFilter]);
+  }), [query, rows, serverPagination, statusFilter]);
 
-  const tableColumns = useMemo<ColumnDef<DemoRow>[]>(() => columns.map((column) => ({
-    accessorKey: column.key,
-    header: ({ column: tableColumn }) => <button className="inline-flex items-center gap-1.5 text-left" onClick={tableColumn.getToggleSortingHandler()}>{column.label}<ArrowUpDown size={12} className="text-slate-400" /></button>,
-    cell: ({ getValue, row }) => {
-      const value = getValue();
-      if (column.kind === "status") return <StatusPill value={String(value ?? "—")} />;
-      if (column.kind === "money") return <span className="tabular-nums">{formatCurrency(Number(value ?? 0))}</span>;
-      if (detailBasePath && column === columns[0] && row.original.detailId) return <Link href={`${detailBasePath}/${row.original.detailId}`} className="font-semibold text-[#0075d1] hover:underline">{String(value ?? "—")}</Link>;
-      return <span>{String(value ?? "—")}</span>;
-    },
-  })), [columns, detailBasePath]);
+  function navigateRegistry(next: { query?: string; status?: string; cursor?: string; direction?: "next" | "prev"; page?: number }) {
+    const params = new URLSearchParams();
+    const nextQuery = next.query ?? serverPagination?.query ?? "";
+    const nextStatus = next.status ?? serverPagination?.status ?? "";
+    if (nextQuery) params.set("q", nextQuery);
+    if (nextStatus && nextStatus !== "ทั้งหมด") params.set("status", nextStatus);
+    if (next.cursor) { params.set("cursor", next.cursor); params.set("dir", next.direction ?? "next"); }
+    if ((next.page ?? 1) > 1) params.set("page", String(next.page));
+    router.push(`${pathname}${params.size ? `?${params}` : ""}`);
+  }
 
-  const table = useReactTable({ data: filteredRows, columns: tableColumns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getFilteredRowModel: getFilteredRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 8 } } });
+  const hasDetailActions = Boolean(detailAction);
+  const tableColumns = useMemo<ColumnDef<DemoRow>[]>(() => {
+    const dataColumns: ColumnDef<DemoRow>[] = columns.map((column) => ({
+      accessorKey: column.key,
+      header: ({ column: tableColumn }) => <button className="inline-flex min-h-9 items-center gap-1.5 text-left outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-blue-400" onClick={tableColumn.getToggleSortingHandler()}>{column.label}<ArrowUpDown size={12} className="text-slate-400" /></button>,
+      cell: ({ getValue }) => {
+        const value = getValue();
+        if (column.kind === "status") return <StatusPill value={String(value ?? "—")} />;
+        if (column.kind === "money") return <span className="tabular-nums">{formatCurrency(Number(value ?? 0))}</span>;
+        return <span>{String(value ?? "—")}</span>;
+      },
+    }));
+
+    if (!detailAction) return dataColumns;
+    return [...dataColumns, {
+      id: "actions",
+      enableSorting: false,
+      header: () => <span>{detailAction.columnLabel ?? "การดำเนินการ"}</span>,
+      cell: ({ row }) => row.original.detailId ? <Link href={`${detailAction.basePath}/${row.original.detailId}`} aria-label={`${detailAction.label} ${String(row.original[detailAction.accessibleLabelKey ?? columns[0]?.key] ?? "")}`} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 text-[12px] font-semibold text-[#0075d1] outline-none transition hover:border-blue-300 hover:bg-blue-50 focus-visible:ring-3 focus-visible:ring-blue-200"><PencilLine size={14} aria-hidden="true" />{detailAction.label}</Link> : <span className="text-[11px] text-slate-400">ไม่มีรายละเอียด</span>,
+    }];
+  }, [columns, detailAction]);
+
+  const table = useReactTable({ data: filteredRows, columns: tableColumns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getFilteredRowModel: getFilteredRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: serverPagination?.pageSize ?? 8 } } });
 
   function openCreateDialog() {
     setFormError("");
@@ -83,23 +111,40 @@ export function DataWorkspace({ title, description, actionLabel, searchPlacehold
 
   async function createRow(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (savingRef.current) return;
     const values = Object.fromEntries(new FormData(event.currentTarget).entries());
     const missing = fields.find((field) => field.required && !String(values[field.key] ?? "").trim());
     if (missing) { setFormError(`กรุณาระบุ${missing.label}`); return; }
-    if (onCreate) {
-      const result = await onCreate(new FormData(event.currentTarget));
-      if (!result.ok) { setFormError(result.message); return; }
+    savingRef.current = true;
+    setSaving(true);
+    setFormError("");
+    try {
+      if (onCreate) {
+        const result = await onCreate(new FormData(event.currentTarget));
+        if (!result.ok) { setFormError(result.message); return; }
+        dialogRef.current?.close();
+        void toast(result.message).catch(() => undefined);
+        router.refresh();
+        return;
+      }
+      const row: DemoRow = { id: `SV-${Date.now().toString().slice(-6)}` };
+      for (const field of fields) row[field.key] = field.kind === "number" ? Number(values[field.key]) || 0 : String(values[field.key] ?? "");
+      if (fields.some((field) => field.key === "houseNumber")) {
+        row.address = [values.road, values.subdistrict, values.district, values.province, values.postalCode].map((value) => String(value ?? "").trim()).filter(Boolean).join(" ") || "—";
+        row.members = 0;
+        row.waterStatus = "ปกติ";
+        row.status = "ว่าง";
+      }
+      for (const column of columns) if (!(column.key in row)) row[column.key] = "—";
+      setRows((current) => [row, ...current]);
       dialogRef.current?.close();
-      toast(result.message);
-      router.refresh();
-      return;
+      void toast("บันทึกรายการตัวอย่างแล้ว").catch(() => undefined);
+    } catch (cause) {
+      setFormError(cause instanceof Error ? cause.message : "บันทึกข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
-    const row: DemoRow = { id: `SV-${Date.now().toString().slice(-6)}` };
-    for (const field of fields) row[field.key] = field.kind === "number" ? Number(values[field.key]) || 0 : String(values[field.key] ?? "");
-    for (const column of columns) if (!(column.key in row)) row[column.key] = "—";
-    setRows((current) => [row, ...current]);
-    dialogRef.current?.close();
-    toast("บันทึกรายการตัวอย่างแล้ว");
   }
 
   async function exportExcel() {
@@ -154,23 +199,27 @@ export function DataWorkspace({ title, description, actionLabel, searchPlacehold
 
       <div className="rounded-2xl border border-[var(--border)] bg-white">
         <div className="flex flex-col gap-3 border-b border-[var(--border)] p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <div className="relative w-full sm:max-w-[360px]"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input aria-label={searchPlaceholder} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} className="h-10 w-full rounded-lg border border-[var(--border)] bg-white pl-9 pr-9 text-[12px] outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-3 focus:ring-blue-100" />{query && <button aria-label="ล้างคำค้น" onClick={() => setQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400"><X size={14} /></button>}</div>
-          <div className="flex flex-wrap items-center gap-2"><div className="relative"><Filter size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" /><select aria-label="กรองสถานะ" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-9 appearance-none rounded-lg border border-[var(--border)] bg-white pl-8 pr-8 text-[11px] text-slate-600 outline-none focus:border-blue-400"><option value="ทั้งหมด">ทุกสถานะ</option>{filters.filter((filter) => filter !== "ทั้งหมด").map((filter) => <option key={filter}>{filter}</option>)}</select><ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" /></div><button onClick={() => void exportExcel()} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--border)] px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50"><Download size={14} />Excel</button><button onClick={exportPdf} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--border)] px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50"><Download size={14} />PDF</button></div>
+          <form className="relative w-full sm:max-w-[360px]" onSubmit={(event) => { event.preventDefault(); if (serverPagination) navigateRegistry({ query, page: 1 }); }}><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input aria-label={searchPlaceholder} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} className="h-10 w-full rounded-lg border border-[var(--border)] bg-white pl-9 pr-9 text-[12px] outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-3 focus:ring-blue-100" />{query && <button type="button" aria-label="ล้างคำค้น" onClick={() => { setQuery(""); if (serverPagination) navigateRegistry({ query: "", page: 1 }); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400"><X size={14} /></button>}</form>
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto"><span aria-live="polite" className="basis-full text-[11px] font-medium text-slate-500 sm:mr-1 sm:basis-auto">พบ {serverPagination?.total ?? filteredRows.length} รายการ</span><div className="relative"><Filter size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" /><select aria-label="กรองสถานะ" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); if (serverPagination) navigateRegistry({ status: event.target.value, page: 1 }); }} className="h-9 appearance-none rounded-lg border border-[var(--border)] bg-white pl-8 pr-8 text-[11px] text-slate-600 outline-none focus:border-blue-400"><option value="ทั้งหมด">ทุกสถานะ</option>{filters.filter((filter) => filter !== "ทั้งหมด").map((filter) => <option key={filter}>{filter}</option>)}</select><ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" /></div><button onClick={() => void exportExcel()} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--border)] px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50"><Download size={14} />Excel</button><button onClick={exportPdf} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--border)] px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50"><Download size={14} />PDF</button></div>
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table data-export-table className="w-full border-collapse text-left"><thead className="bg-slate-50/80"><tr>{table.getHeaderGroups().map((headerGroup) => headerGroup.headers.map((header) => <th key={header.id} className="h-11 whitespace-nowrap border-b border-[var(--border)] px-4 text-[10px] font-semibold text-slate-500 first:pl-5">{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</th>))}</tr></thead>
-            <tbody>{table.getRowModel().rows.length === 0 ? <tr><td colSpan={columns.length} className="py-16 text-center text-[12px] text-slate-500">ไม่พบรายการที่ตรงกับการค้นหา</td></tr> : table.getRowModel().rows.map((row) => <tr key={row.id} className="border-b border-slate-100 transition hover:bg-slate-50/70 last:border-0">{row.getVisibleCells().map((cell) => <td key={cell.id} className="h-[54px] whitespace-nowrap px-4 text-[11px] text-slate-700 first:pl-5">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>)}</tbody>
+          <table data-export-table className="w-full min-w-[760px] border-collapse text-left"><thead className="bg-slate-50/80"><tr>{table.getHeaderGroups().map((headerGroup) => headerGroup.headers.map((header) => <th key={header.id} className={`h-11 whitespace-nowrap border-b border-[var(--border)] px-4 text-[11px] font-semibold text-slate-500 first:pl-5 ${header.column.id === "actions" ? "sticky right-0 z-10 border-l border-slate-200 bg-slate-50 text-right" : ""}`}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</th>))}</tr></thead>
+            <tbody>{table.getRowModel().rows.length === 0 ? <tr><td colSpan={tableColumns.length} className="py-16 text-center text-[12px] text-slate-500"><SearchX size={22} aria-hidden="true" className="mx-auto mb-2 text-slate-300" /><span className="font-medium text-slate-600">ไม่พบรายการ</span><span className="mt-1 block">ลองเปลี่ยนคำค้นหาหรือตัวกรองสถานะ</span></td></tr> : table.getRowModel().rows.map((row) => <tr key={row.id} className="group border-b border-slate-100 transition hover:bg-slate-50/70 last:border-0">{row.getVisibleCells().map((cell) => <td key={cell.id} className={`h-[60px] whitespace-nowrap px-4 text-[12px] text-slate-700 first:pl-5 ${cell.column.id === "actions" ? "sticky right-0 z-10 border-l border-slate-100 bg-white text-right group-hover:bg-slate-50" : ""}`}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>)}</tbody>
           </table>
         </div>
 
-        <div className="divide-y divide-slate-100 md:hidden">{table.getRowModel().rows.length === 0 ? <p className="px-4 py-12 text-center text-[12px] text-slate-500">ไม่พบรายการที่ตรงกับการค้นหา</p> : table.getRowModel().rows.map((row) => <article key={row.id} className="space-y-3 px-4 py-4"><div className="flex items-start gap-3"><div className="grid min-w-0 flex-1 grid-cols-2 gap-3">{columns.slice(0, 2).map((column, index) => <div key={column.key} className="min-w-0"><p className="text-[11px] text-slate-500">{column.label}</p>{detailBasePath && index === 0 && row.original.detailId ? <Link href={`${detailBasePath}/${row.original.detailId}`} className="mt-0.5 block break-words text-[13px] font-semibold leading-5 text-[#0075d1] hover:underline">{String(row.original[column.key] ?? "—")}</Link> : <p className="mt-0.5 break-words text-[13px] font-semibold leading-5 text-slate-800">{String(row.original[column.key] ?? "—")}</p>}</div>)}</div>{columns.find((column) => column.kind === "status") && <span className="shrink-0"><StatusPill value={String(row.original[columns.find((column) => column.kind === "status")!.key] ?? "—")} /></span>}</div><div className="flex flex-wrap gap-x-4 gap-y-1.5">{columns.slice(2).filter((column) => column.kind !== "status").map((column) => <p key={column.key} className="text-[11px] leading-4 text-slate-600"><span className="text-slate-500">{column.label}: </span>{column.kind === "money" ? formatCurrency(Number(row.original[column.key] ?? 0)) : String(row.original[column.key] ?? "—")}</p>)}</div></article>)}</div>
+        <div className="divide-y divide-slate-100 md:hidden">{table.getRowModel().rows.length === 0 ? <div className="px-4 py-12 text-center text-[12px] text-slate-500"><SearchX size={22} aria-hidden="true" className="mx-auto mb-2 text-slate-300" /><p className="font-medium text-slate-600">ไม่พบรายการ</p><p className="mt-1">ลองเปลี่ยนคำค้นหาหรือตัวกรองสถานะ</p></div> : table.getRowModel().rows.map((row) => <article key={row.id} className="space-y-3.5 px-4 py-4"><div className="flex items-start gap-3"><div className="grid min-w-0 flex-1 grid-cols-2 gap-3">{columns.slice(0, 2).map((column) => <div key={column.key} className="min-w-0"><p className="text-[11px] text-slate-500">{column.label}</p><p className="mt-0.5 break-words text-[13px] font-semibold leading-5 text-slate-800">{String(row.original[column.key] ?? "—")}</p></div>)}</div>{columns.find((column) => column.kind === "status") && <span className="shrink-0"><StatusPill value={String(row.original[columns.find((column) => column.kind === "status")!.key] ?? "—")} /></span>}</div><dl className="grid grid-cols-2 gap-x-4 gap-y-2">{columns.slice(2).filter((column) => column.kind !== "status").map((column) => <div key={column.key} className="min-w-0"><dt className="text-[11px] text-slate-500">{column.label}</dt><dd className="mt-0.5 break-words text-[12px] font-medium leading-5 text-slate-700">{column.kind === "money" ? formatCurrency(Number(row.original[column.key] ?? 0)) : String(row.original[column.key] ?? "—")}</dd></div>)}</dl>{hasDetailActions && detailAction && row.original.detailId && <Link href={`${detailAction.basePath}/${row.original.detailId}`} aria-label={`${detailAction.label} ${String(row.original[detailAction.accessibleLabelKey ?? columns[0]?.key] ?? "")}`} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 text-[12px] font-semibold text-[#0075d1] outline-none transition hover:border-blue-300 hover:bg-blue-100 focus-visible:ring-3 focus-visible:ring-blue-200"><PencilLine size={15} aria-hidden="true" />{detailAction.label}</Link>}</article>)}</div>
 
-        <div className="flex flex-col gap-3 border-t border-[var(--border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5"><p className="text-[11px] text-slate-600">แสดง {table.getRowModel().rows.length ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 : 0}–{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredRows.length)} จาก {filteredRows.length} รายการ</p><div className="flex items-center gap-2"><button disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()} className="flex size-10 items-center justify-center rounded-lg border border-[var(--border)] text-slate-600 disabled:opacity-40" aria-label="หน้าก่อน"><ChevronLeft size={16} /></button><span className="min-w-[84px] text-center text-[11px] text-slate-600">หน้า {table.getState().pagination.pageIndex + 1} / {Math.max(table.getPageCount(), 1)}</span><button disabled={!table.getCanNextPage()} onClick={() => table.nextPage()} className="flex size-10 items-center justify-center rounded-lg border border-[var(--border)] text-slate-600 disabled:opacity-40" aria-label="หน้าถัดไป"><ChevronRight size={16} /></button></div></div>
+        <div className="flex flex-col gap-3 border-t border-[var(--border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5"><p className="text-[11px] text-slate-600">{serverPagination ? `แสดง ${filteredRows.length ? (serverPagination.page - 1) * serverPagination.pageSize + 1 : 0}–${Math.min(serverPagination.page * serverPagination.pageSize, serverPagination.total)} จาก ${serverPagination.total} รายการ` : `แสดง ${table.getRowModel().rows.length ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 : 0}–${Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredRows.length)} จาก ${filteredRows.length} รายการ`}</p><div className="flex items-center gap-2"><button disabled={serverPagination ? !serverPagination.previousCursor : !table.getCanPreviousPage()} onClick={() => serverPagination ? navigateRegistry({ cursor: serverPagination.previousCursor, direction: "prev", page: Math.max(1, serverPagination.page - 1) }) : table.previousPage()} className="flex size-10 items-center justify-center rounded-lg border border-[var(--border)] text-slate-600 disabled:opacity-40" aria-label="หน้าก่อน"><ChevronLeft size={16} /></button><span className="min-w-[84px] text-center text-[11px] text-slate-600">หน้า {serverPagination?.page ?? table.getState().pagination.pageIndex + 1}{serverPagination ? "" : ` / ${Math.max(table.getPageCount(), 1)}`}</span><button disabled={serverPagination ? !serverPagination.nextCursor : !table.getCanNextPage()} onClick={() => serverPagination ? navigateRegistry({ cursor: serverPagination.nextCursor, direction: "next", page: serverPagination.page + 1 }) : table.nextPage()} className="flex size-10 items-center justify-center rounded-lg border border-[var(--border)] text-slate-600 disabled:opacity-40" aria-label="หน้าถัดไป"><ChevronRight size={16} /></button></div></div>
       </div>
 
       <dialog ref={dialogRef} aria-labelledby={dialogTitleId} aria-describedby={dialogDescriptionId} className="m-auto w-[calc(100%-28px)] max-w-[520px] rounded-2xl border border-[var(--border)] bg-white p-0 text-[var(--foreground)] shadow-[0_24px_70px_rgb(19_42_71_/_18%)] backdrop:bg-slate-950/35">
-        <form ref={formRef} onSubmit={createRow} className="space-y-5 p-5 sm:p-6"><div><h2 id={dialogTitleId} className="text-[18px] font-bold text-slate-900">{actionLabel}</h2><p id={dialogDescriptionId} className="mt-1 text-[12px] text-slate-500">กรอกข้อมูลเพื่อเพิ่มรายการ</p></div><div className="grid gap-4 sm:grid-cols-2">{fields.map((field, index) => <label key={field.key} className="space-y-1.5"><span className="text-[11px] font-semibold text-slate-700">{field.label}{field.required && <span className="ml-1 text-rose-500">*</span>}</span>{field.kind === "autocomplete" ? <Autocomplete name={field.key} required={field.required} autoFocus={index === 0} placeholder={field.placeholder ?? `ค้นหา${field.label}...`} options={(field.options ?? []).filter((option): option is AutocompleteOption => typeof option !== "string")} /> : field.kind === "select" ? <select name={field.key} required={field.required} defaultValue="" autoFocus={index === 0} className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[12px] outline-none focus:border-blue-400 focus:ring-3 focus:ring-blue-100"><option value="" disabled>เลือก{field.label}</option>{field.options?.map((option) => { const item = typeof option === "string" ? { value: option, label: option } : option; return <option key={item.value} value={item.value}>{item.label}</option>; })}</select> : <input name={field.key} required={field.required} type={field.kind ?? "text"} autoFocus={index === 0} placeholder={field.placeholder} className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[12px] outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-3 focus:ring-blue-100" />}</label>)}</div>{formError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-[11px] text-rose-700">{formError}</p>}<div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4"><button type="button" onClick={() => dialogRef.current?.close()} className="h-9 rounded-lg border border-[var(--border)] px-3.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50">ยกเลิก</button><button type="submit" className="h-9 rounded-lg bg-[var(--primary)] px-4 text-[11px] font-semibold text-white hover:bg-[var(--primary-hover)]">บันทึก</button></div></form>
+        <form ref={formRef} onSubmit={createRow} className="space-y-5 p-5 sm:p-6"><div><h2 id={dialogTitleId} className="text-[18px] font-bold text-slate-900">{actionLabel}</h2><p id={dialogDescriptionId} className="mt-1 text-[12px] text-slate-500">กรอกข้อมูลเพื่อเพิ่มรายการ</p></div><div className="grid gap-4 sm:grid-cols-2">{fields.map((field, index) => {
+          if (field.key === "district" || field.key === "province" || field.key === "postalCode") return null;
+          if (field.key === "subdistrict") return <ThaiAddressFields key="thai-address" names={{ subdistrict: "subdistrict", district: "district", province: "province", postalCode: "postalCode" }} />;
+          return <label key={field.key} className="space-y-1.5"><span className="text-[11px] font-semibold text-slate-700">{field.label}{field.required && <span className="ml-1 text-rose-500">*</span>}</span>{field.kind === "autocomplete" ? <Autocomplete name={field.key} required={field.required} autoFocus={index === 0} placeholder={field.placeholder ?? `ค้นหา${field.label}...`} options={(field.options ?? []).filter((option): option is AutocompleteOption => typeof option !== "string")} searchUrl={field.remoteOptionsUrl} /> : field.kind === "select" ? <select name={field.key} required={field.required} defaultValue="" autoFocus={index === 0} className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[12px] outline-none focus:border-blue-400 focus:ring-3 focus:ring-blue-100"><option value="" disabled>เลือก{field.label}</option>{field.options?.map((option) => { const item = typeof option === "string" ? { value: option, label: option } : option; return <option key={item.value} value={item.value}>{item.label}</option>; })}</select> : <input name={field.key} required={field.required} type={field.kind ?? "text"} autoFocus={index === 0} placeholder={field.placeholder} className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[12px] outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-3 focus:ring-blue-100" />}</label>;
+        })}</div>{formError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-[11px] text-rose-700">{formError}</p>}<div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4"><button type="button" disabled={saving} onClick={() => dialogRef.current?.close()} className="h-9 rounded-lg border border-[var(--border)] px-3.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50">ยกเลิก</button><button type="submit" disabled={saving} aria-busy={saving} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-[11px] font-semibold text-white hover:bg-[var(--primary-hover)] disabled:cursor-wait disabled:opacity-70">{saving && <LoaderCircle size={14} className="animate-spin" />}{saving ? "กำลังบันทึก..." : "บันทึก"}</button></div></form>
       </dialog>
     </div>
   );

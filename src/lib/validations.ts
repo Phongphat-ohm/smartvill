@@ -17,8 +17,8 @@ export const residentSchema = z.object({
   firstName: requiredText("ชื่อ"),
   lastName: requiredText("นามสกุล"),
   nationalId: z.string().regex(/^\d{13}$/, "เลขบัตรประชาชนต้องมี 13 หลัก").optional().or(z.literal("")),
-  birthDate: z.string().optional(),
-  phone: z.string().trim().default(""),
+  birthDate: z.string().date("วันเกิดไม่ถูกต้อง").optional().or(z.literal("")),
+  phone: z.string().trim().max(30, "เบอร์โทรศัพท์ยาวเกินไป").default(""),
   householdId: requiredText("ครัวเรือน"),
   relationship: requiredText("ความสัมพันธ์กับหัวหน้าครัวเรือน"),
 });
@@ -34,7 +34,7 @@ export const residentUpdateSchema = z.object({
   firstName: requiredText("ชื่อ"),
   lastName: requiredText("นามสกุล"),
   nationalId: z.string().regex(/^\d{13}$/, "เลขบัตรประชาชนต้องมี 13 หลัก").optional().or(z.literal("")),
-  birthDate: z.string().optional(),
+  birthDate: z.string().date("วันเกิดไม่ถูกต้อง").optional().or(z.literal("")),
   phone: z.string().trim().max(30, "เบอร์โทรศัพท์ยาวเกินไป").default(""),
 });
 
@@ -44,6 +44,12 @@ export const residencyChangeSchema = z.object({
   relationship: requiredText("ความสัมพันธ์"),
   changeDate: z.string().date("วันที่ย้ายไม่ถูกต้อง"),
   reason: z.string().trim().min(3, "ระบุเหตุผลอย่างน้อย 3 ตัวอักษร").max(255),
+});
+
+export const deceasedResidentSchema = z.object({
+  residentId: z.string().uuid("ไม่พบรหัสประชากร"),
+  deceasedAt: z.string().date("วันที่เสียชีวิตไม่ถูกต้อง"),
+  reason: z.string().trim().min(3, "ระบุแหล่งข้อมูลหรือเหตุผลอย่างน้อย 3 ตัวอักษร").max(255),
 });
 
 export const meterReadingSchema = z.object({
